@@ -1,0 +1,1171 @@
+\documentclass[12pt,a4paper]{article}
+
+% ============= PACKAGES =============
+% Vietnamese language support
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage[T5]{fontenc}
+
+% Page layout
+\usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+% Math and symbols
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+
+% Graphics and figures
+% QUAN TRỌNG: Dùng [draft] để compile NHANH (chỉ show boxes)
+%              Bỏ [draft] khi muốn export PDF final (sẽ show hình thật)
+\usepackage{graphicx}  % Thêm 'draft' để compile nhanh!
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc, decorations.pathreplacing, patterns}
+
+% Tables
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{enumitem}  % cho options của itemize
+\setlist[enumerate]{itemsep=0pt, parsep=0pt, topsep=0pt, partopsep=0pt}
+\setlist[itemize]{itemsep=0pt, parsep=0pt, topsep=0pt, partopsep=0pt}
+
+% Colors and styling
+\usepackage{xcolor}
+\usepackage{colortbl}
+
+% Code listings
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% References and links
+\usepackage{hyperref}
+\usepackage{url}
+
+% Headers and footers
+\usepackage{fancyhdr}
+
+% Table of contents
+\usepackage{tocloft}
+\usepackage{titlesec}
+
+% For checkmarks
+\usepackage{pifont}
+
+% tcolorbox for problem boxes
+\usepackage{tcolorbox}
+
+% ============= COLOR DEFINITIONS =============
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{hcmublue}{RGB}{0,51,102}
+\definecolor{gridgreen}{RGB}{0,150,0}
+\definecolor{gridred}{RGB}{200,0,0}
+
+% ============= CUSTOM COMMANDS =============
+\newcommand{\studentinfo}[2]{#1 & MSSV: #2 \\}
+\newcommand{\algorithmname}[1]{\textbf{\textcolor{hcmublue}{#1}}}
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+% ============= CODE LISTING STYLE =============
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=4,
+    frame=single,
+    rulecolor=\color{codegray}
+}
+\lstset{style=pythonstyle}
+
+% ============= ALGORITHM STYLE =============
+\algrenewcommand\algorithmicrequire{\textbf{Input:}}
+\algrenewcommand\algorithmicensure{\textbf{Output:}}
+
+% ============= HYPERREF SETUP =============
+\hypersetup{
+    colorlinks=true,
+    linkcolor=hcmublue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    citecolor=hcmublue,
+    pdftitle={Bài tập điểm cộng - Chapter 21: Reinforcement Learning},
+    pdfauthor={Nhóm sinh viên HCMUS},
+    bookmarksnumbered=true,
+    bookmarksopen=true
+}
+
+% ============= HEADER AND FOOTER =============
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Bài tập điểm cộng: Reinforcement Learning}
+\fancyhead[R]{\small CSC14003}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% First page style (no header)
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+}
+
+% ============= SECTION FORMATTING =============
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{hcmublue}}
+  {\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{hcmublue}}
+  {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{hcmublue}}
+  {\thesubsubsection}{1em}{}
+
+% ============= PARAGRAPH FORMATTING =============
+\setlength{\parindent}{0pt}  % Bỏ thụt đầu dòng
+\setlength{\parskip}{6pt}     % Thêm khoảng cách giữa các đoạn
+
+% ============= CUSTOM COMMANDS =============
+% Redefine \textbf để tự động có màu xanh
+\let\oldtextbf\textbf
+\renewcommand{\textbf}[1]{\oldtextbf{\textcolor{hcmublue}{#1}}}
+
+% ============= DOCUMENT INFO =============
+\title{\textbf{BÀI TẬP ĐIỂM CỘNG}\\
+\Large{CHAPTER 21: REINFORCEMENT LEARNING}}
+\author{}
+\date{}
+
+% ============= BEGIN DOCUMENT =============
+\begin{document}
+
+% ============= TITLE PAGE =============
+\begin{titlepage}
+    \centering
+    \vspace*{0.5cm}
+    
+    % University name
+    {\Large \textbf{ĐẠI HỌC QUỐC GIA TP. HỒ CHÍ MINH}}\\[0.3cm]
+    {\Large \textbf{TRƯỜNG ĐẠI HỌC KHOA HỌC TỰ NHIÊN}}\\[0.3cm]
+    {\Large \textbf{KHOA CÔNG NGHỆ THÔNG TIN}}\\[1.5cm]
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.25\textwidth]{logo.png}
+    \end{figure}
+        
+    % Report title
+    \rule{\linewidth}{0.5mm} \\[0.4cm]
+    {\huge \textbf{BÀI TẬP ĐIỂM CỘNG}}\\[0.3cm]
+    {\LARGE \textbf{CHAPTER 21: REINFORCEMENT LEARNING}}\\[0.2cm]
+    {\large \textit{(Học Tăng cường)}}\\[0.4cm]
+    \rule{\linewidth}{0.5mm} \\[1.5cm]
+    
+    % Course info
+    \begin{tabular}{rl}
+        \textbf{Môn học:} & CSC14003 - Cơ sở Trí tuệ Nhân tạo\\[0.2cm]
+        \textbf{Lớp:} & 23TNT1\\[0.2cm]
+        \textbf{GVHD:} & GS.TS Lê Hoài Bắc\\
+        & ThS. Lê Nhựt Nam\\
+    \end{tabular}
+    
+    \vfill
+\begin{tabular}{r p{5cm} l}
+    \multicolumn{3}{l}{\textbf{\large Nhóm sinh viên thực hiện:}}\\[0.5cm]
+    1. & Phạm Phú Hòa         & MSSV: 23122030 \\
+    2. & Đào Sỹ Duy Minh      & MSSV: 23122041 \\
+    3. & Trần Chí Nguyên      & MSSV: 23122044 \\
+    4. & Nguyễn Lâm Phú Quý   & MSSV: 23122048 \\
+\end{tabular}
+    
+    \vfill
+    
+\end{titlepage}
+
+% ============= ABSTRACT =============
+\begin{abstract}
+This document provides a comprehensive summary of Chapter 21 ``Reinforcement Learning'' from the textbook \textit{Artificial Intelligence: A Modern Approach}. It details the progression from passive learning in known and unknown environments to active learning, generalization, and policy search. Furthermore, it presents detailed solutions to selected exercises, demonstrating the practical application of these concepts.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Summary of Chapter 21: Reinforcement Learning}
+
+Reinforcement Learning (RL) studies how an agent can learn to behave successfully in an environment based on feedback in the form of rewards and punishments, without explicit supervision or a complete model of the environment.
+
+\subsection{Introduction}
+As discussed in previous chapters on supervised learning, agents typically learn from labeled examples. However, in many real-world scenarios, such as playing chess or flying a helicopter, labeled examples of "correct" actions are unavailable. Instead, the agent must learn from \textbf{reinforcement}: a reward or punishment signal received after a sequence of actions.
+
+% ===== FIGURE: RL Agent-Environment Interaction =====
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=1.2cm, align=center},
+    arrow/.style={-{Stealth[length=3mm]}, thick}
+]
+    % Agent box
+    \node[box, fill=blue!20] (agent) at (0,0) {\textbf{Agent}};
+    
+    % Environment box
+    \node[box, fill=green!20] (env) at (6,0) {\textbf{Environment}};
+    
+    % Action arrow (top)
+    \draw[arrow] (agent.east) ++(0,0.3) -- node[above, midway] {Action $a_t$} ++(3.5,0);
+    
+    % State arrow (bottom)
+    \draw[arrow] (env.west) ++(-0.5,-0.3) -- node[below, midway] {State $s_{t+1}$} ++(-3,0);
+    
+    % Reward arrow (curved below)
+    \draw[arrow, dashed, red!70!black] (env.south) -- ++(0,-0.8) -| node[below, pos=0.25] {Reward $r_{t+1}$} (agent.south);
+    
+    % Policy notation
+    \node[below=0.3cm of agent] {$\pi(s) \to a$};
+    
+    % MDP notation
+    \node[below=0.3cm of env] {$P(s'|s,a), R(s)$};
+\end{tikzpicture}
+\caption{Reinforcement Learning: Agent-Environment Interaction Loop}
+\label{fig:rl-agent}
+\end{figure}
+
+The goal of the agent is to learn a policy $\pi$ that maximizes the expected total reward. The environment is modeled as a Markov Decision Process (MDP), but crucially, the agent may not know the transition model $P(s'|s,a)$ or the reward function $R(s)$.
+
+We consider three main agent designs:
+\begin{enumerate}
+    \item \textbf{Utility-based agent:} Learns a utility function on states $U(s)$ and uses a learned model of the environment to select actions that maximize expected utility.
+    \item \textbf{Q-learning agent:} Learns an action-utility function $Q(s,a)$, representing the expected utility of taking action $a$ in state $s$. This allows action selection without a transition model.
+    \item \textbf{Reflex agent:} Learns a policy $\pi(s)$ directly, mapping states to actions without necessarily learning utility values.
+\end{enumerate}
+
+\subsection{Passive Reinforcement Learning}
+In passive reinforcement learning, the agent's policy $\pi$ is fixed. The agent's task is to learn the utility function $U^\pi(s)$, which is the expected sum of discounted rewards starting from state $s$ and following policy $\pi$:
+\[ U^\pi(s) = E \left[ \sum_{t=0}^{\infty} \gamma^t R(S_t) \right] \]
+
+% ===== FIGURE: 4x3 Grid World =====
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=1.2]
+    % Grid
+    \foreach \x in {0,1,2,3} {
+        \foreach \y in {0,1,2} {
+            \draw (\x,\y) rectangle (\x+1,\y+1);
+        }
+    }
+    
+    % Obstacle at (2,2) - which is (1,1) in 0-indexed
+    \fill[gray!50] (1,1) rectangle (2,2);
+    \node at (1.5,1.5) {\textbf{Wall}};
+    
+    % Terminal states
+    \fill[green!30] (3,2) rectangle (4,3);
+    \node at (3.5,2.5) {\textbf{+1}};
+    
+    \fill[red!30] (3,1) rectangle (4,2);
+    \node at (3.5,1.5) {\textbf{-1}};
+    
+    % Start state
+    \fill[blue!20] (0,0) rectangle (1,1);
+    \node at (0.5,0.5) {\textbf{S}};
+    
+    % Policy arrows
+    \draw[-{Stealth}, thick, blue] (0.5,0.7) -- (0.5,0.95);
+    \draw[-{Stealth}, thick, blue] (0.5,1.5) -- (0.5,1.95);
+    \draw[-{Stealth}, thick, blue] (0.5,2.5) -- (0.95,2.5);
+    \draw[-{Stealth}, thick, blue] (1.5,2.5) -- (1.95,2.5);
+    \draw[-{Stealth}, thick, blue] (2.5,2.5) -- (2.95,2.5);
+    \draw[-{Stealth}, thick, blue] (1.5,0.5) -- (1.95,0.5);
+    \draw[-{Stealth}, thick, blue] (2.5,0.5) -- (2.5,0.95);
+    \draw[-{Stealth}, thick, blue] (2.5,1.5) -- (2.5,1.95);
+    
+    % Coordinates
+    \node[below] at (0.5,-0.1) {1};
+    \node[below] at (1.5,-0.1) {2};
+    \node[below] at (2.5,-0.1) {3};
+    \node[below] at (3.5,-0.1) {4};
+    \node[left] at (-0.1,0.5) {1};
+    \node[left] at (-0.1,1.5) {2};
+    \node[left] at (-0.1,2.5) {3};
+\end{tikzpicture}
+\caption{The 4$\times$3 Grid World with optimal policy arrows. S = Start, +1/-1 = Terminal states.}
+\label{fig:4x3-world}
+\end{figure}
+
+There are three primary approaches to passive learning:
+
+\subsubsection{Direct Utility Estimation (DUE)}
+This method treats utility estimation as a supervised learning problem. The utility of a state is estimated as the average total reward (return) observed from that state onwards across multiple trials.
+\begin{itemize}
+    \item \textbf{Pros:} Simple to implement.
+    \item \textbf{Cons:} Ignores the Bellman constraints (dependencies between state utilities), leading to slow convergence.
+\end{itemize}
+
+\subsubsection{Adaptive Dynamic Programming (ADP)}
+ADP acts as a model-based approach. The agent learns the transition model $P(s'|s, \pi(s))$ and reward function $R(s)$ from observations.
+\[ \hat{P}(s'|s, \pi(s)) = \frac{N(s, \pi(s), s')}{N(s, \pi(s))} \]
+It then solves the Bellman equations using the estimated model:
+\[ U^\pi(s) = R(s) + \gamma \sum_{s'} P(s'|s, \pi(s)) U^\pi(s') \]
+\begin{itemize}
+    \item \textbf{Pros:} Makes full use of information; converges fast in terms of sample complexity.
+    \item \textbf{Cons:} Computationally expensive for large state spaces (solving linear systems).
+\end{itemize}
+
+\subsubsection{Temporal-Difference (TD) Learning}
+TD learning updates utility estimates based on the difference between the current estimate and the estimate of the successor state. It does not require a transition model. The update rule is:
+\[ U^\pi(s) \leftarrow U^\pi(s) + \alpha (R(s) + \gamma U^\pi(s') - U^\pi(s)) \]
+where $\alpha$ is the learning rate.
+\begin{itemize}
+    \item \textbf{Pros:} Model-free; computationally efficient per step.
+    \item \textbf{Cons:} Higher variance than ADP; requires more samples to converge than ADP.
+\end{itemize}
+
+\subsection{Active Reinforcement Learning}
+In active learning, the agent must decide which actions to take. This introduces the \textbf{exploration vs. exploitation} trade-off. The agent must exploit its current knowledge to maximize rewards but also explore unknown states/actions to learn the true environment model.
+
+\subsubsection{Exploration Strategies}
+A purely greedy agent may get stuck in suboptimal policies.
+\begin{itemize}
+    \item \textbf{$\epsilon$-greedy:} Choose a random action with probability $\epsilon$, otherwise choose the best action.
+    \item \textbf{Exploration Functions:} Assign higher value to less visited states. $U^+(s) = R(s) + \gamma \max_a f(\sum P(s'|s,a)U^+(s'), N(s,a))$.
+\end{itemize}
+
+\subsubsection{Q-Learning (Off-Policy)}
+Q-learning learns $Q(s,a)$ values directly, independent of the policy being followed (hence "off-policy").
+\[ Q(s,a) \leftarrow Q(s,a) + \alpha (R(s) + \gamma \max_{a'} Q(s',a') - Q(s,a)) \]
+It converges to the optimal $Q^*$ values.
+
+\subsubsection{SARSA (On-Policy)}
+SARSA updates $Q$-values based on the action actually taken by the current policy.
+\[ Q(s,a) \leftarrow Q(s,a) + \alpha (R(s) + \gamma Q(s',a') - Q(s,a)) \]
+
+\subsection{Generalization in Reinforcement Learning}
+For large or continuous state spaces, tabular representations are infeasible. \textbf{Function approximation} represents utilities as a parameterized function, e.g., a linear combination of features:
+\[ \hat{U}_\theta(s) = \theta_1 f_1(s) + \dots + \theta_n f_n(s) \]
+Parameters $\theta$ are updated using gradient descent to minimize the error between the approximate value and the target (observed) value.
+
+% ===== FIGURE: Function Approximation =====
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    feature/.style={rectangle, draw, thick, minimum width=1.8cm, minimum height=0.8cm, fill=blue!15},
+    weight/.style={circle, draw, thick, minimum size=0.8cm, fill=yellow!30},
+    sum/.style={circle, draw, thick, minimum size=1cm, fill=green!20},
+    arrow/.style={-{Stealth}, thick}
+]
+    % State input
+    \node[rectangle, draw, thick, fill=gray!20, minimum width=1.5cm, minimum height=1.5cm, align=center] (state) at (-3,0) {State $s$\\$(x,y)$};
+    
+    % Features
+    \node[feature] (f1) at (0,2) {$f_1(s) = 1$};
+    \node[feature] (f2) at (0,0.7) {$f_2(s) = x$};
+    \node[feature] (f3) at (0,-0.7) {$f_3(s) = y$};
+    \node[feature] (f4) at (0,-2) {$f_4(s) = d_g$};
+    
+    % Arrows from state to features
+    \draw[arrow] (state.east) -- (f1.west);
+    \draw[arrow] (state.east) -- (f2.west);
+    \draw[arrow] (state.east) -- (f3.west);
+    \draw[arrow] (state.east) -- (f4.west);
+    
+    % Weights
+    \node[weight] (w1) at (2.5,2) {$\theta_1$};
+    \node[weight] (w2) at (2.5,0.7) {$\theta_2$};
+    \node[weight] (w3) at (2.5,-0.7) {$\theta_3$};
+    \node[weight] (w4) at (2.5,-2) {$\theta_4$};
+    
+    % Arrows from features to weights
+    \draw[arrow] (f1.east) -- (w1.west);
+    \draw[arrow] (f2.east) -- (w2.west);
+    \draw[arrow] (f3.east) -- (w3.west);
+    \draw[arrow] (f4.east) -- (w4.west);
+    
+    % Summation
+    \node[sum] (sum) at (5,0) {$\Sigma$};
+    
+    % Arrows from weights to sum
+    \draw[arrow] (w1.east) -- (sum.north west);
+    \draw[arrow] (w2.east) -- (sum.west);
+    \draw[arrow] (w3.east) -- (sum.west);
+    \draw[arrow] (w4.east) -- (sum.south west);
+    
+    % Output
+    \node[rectangle, draw, thick, fill=red!20, minimum width=1.5cm, minimum height=1cm] (output) at (7.5,0) {$\hat{U}(s)$};
+    \draw[arrow] (sum.east) -- (output.west);
+    
+    % Labels
+    \node[below=0.3cm] at (0,-2.5) {\small Feature Extraction};
+    \node[below=0.3cm] at (2.5,-2.5) {\small Weights};
+\end{tikzpicture}
+\caption{Function Approximation: Features of state $s$ are weighted and summed to estimate utility $\hat{U}(s)$.}
+\label{fig:func-approx}
+\end{figure}
+
+\subsection{Policy Search}
+Policy search methods directly learn the policy parameters $\theta$ to maximize the expected return, without necessarily learning value functions. This is often done using \textbf{policy gradient} methods, which adjust $\theta$ in the direction that increases the expected reward.
+
+\newpage
+\section{Exercises and Solutions}
+
+\subsection{Exercise 21.1: Passive Learning Comparison}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Implement a passive learning agent in a simple environment, such as the $4 \times 3$ world. For the case of an initially unknown environment model, compare the learning performance of the direct utility estimation, TD, and ADP algorithms. Do the comparison for the optimal policy and for several random policies. For which do the utility estimates converge faster? What happens when the size of the environment is increased?
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+\subsubsection*{1. Implementation Details}
+We consider the standard $4 \times 3$ grid world with:
+\begin{itemize}
+    \item \textbf{States:} $(x,y)$ where $x \in \{1..4\}, y \in \{1..3\}$.
+    \item \textbf{Start:} $(1,1)$.
+    \item \textbf{Terminals:} $(4,3)$ with reward $+1$, $(4,2)$ with reward $-1$.
+    \item \textbf{Obstacle:} $(2,2)$.
+    \item \textbf{Step Reward:} $-0.04$.
+\end{itemize}
+
+% ===== FIGURE: Convergence Comparison =====
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.9]
+    % Axes
+    \draw[-{Stealth}, thick] (0,0) -- (10,0) node[right] {Trials};
+    \draw[-{Stealth}, thick] (0,0) -- (0,6) node[above] {RMS Error};
+    
+    % Y-axis labels
+    \foreach \y/\label in {1/0.2, 2/0.4, 3/0.6, 4/0.8, 5/1.0} {
+        \draw (-0.1,\y) -- (0.1,\y);
+        \node[left] at (-0.1,\y) {\small \label};
+    }
+    
+    % X-axis labels
+    \foreach \x/\label in {2/20, 4/40, 6/60, 8/80, 9.5/100} {
+        \draw (\x,-0.1) -- (\x,0.1);
+        \node[below] at (\x,-0.1) {\small \label};
+    }
+    
+    % DUE curve (slowest - red)
+    \draw[thick, red, smooth] plot coordinates {(0.5,5) (1,4.5) (2,4) (3,3.5) (4,3.2) (5,2.9) (6,2.6) (7,2.4) (8,2.2) (9,2.0)};
+    
+    % TD curve (medium - blue)
+    \draw[thick, blue, smooth] plot coordinates {(0.5,5) (1,3.5) (2,2.5) (3,1.8) (4,1.3) (5,0.9) (6,0.6) (7,0.4) (8,0.3) (9,0.25)};
+    
+    % ADP curve (fastest - green)
+    \draw[thick, green!60!black, smooth] plot coordinates {(0.5,5) (1,2.5) (2,1.2) (3,0.6) (4,0.35) (5,0.2) (6,0.15) (7,0.12) (8,0.1) (9,0.08)};
+    
+    % Legend
+    \draw[thick, red] (6.5,5.5) -- (7.5,5.5); \node[right] at (7.5,5.5) {\small DUE};
+    \draw[thick, blue] (6.5,5) -- (7.5,5); \node[right] at (7.5,5) {\small TD};
+    \draw[thick, green!60!black] (6.5,4.5) -- (7.5,4.5); \node[right] at (7.5,4.5) {\small ADP};
+\end{tikzpicture}
+\caption{Convergence comparison: RMS error vs. number of trials for DUE, TD, and ADP algorithms.}
+\label{fig:convergence}
+\end{figure}
+
+\subsubsection*{2. Comparison of Algorithms}
+\begin{itemize}
+    \item \textbf{Adaptive Dynamic Programming (ADP):}
+    \begin{itemize}
+        \item \textit{Performance:} Converges with the fewest number of episodes.
+        \item \textit{Reason:} It extracts the maximum amount of information from each observation by building a model and enforcing consistency via the Bellman equations.
+        \item \textit{Cost:} High computational cost per step ($O(S^3)$ or slightly better with iterative solvers) to solve the system of equations.
+    \end{itemize}
+    
+    \item \textbf{Temporal Difference (TD):}
+    \begin{itemize}
+        \item \textit{Performance:} Converges slower than ADP in terms of episodes but faster than DUE.
+        \item \textit{Reason:} It propagates information back one step at a time. It does not enforce global consistency immediately like ADP.
+        \item \textit{Cost:} Very low computational cost per step ($O(1)$).
+    \end{itemize}
+    
+    \item \textbf{Direct Utility Estimation (DUE):}
+    \begin{itemize}
+        \item \textit{Performance:} Converges the slowest.
+        \item \textit{Reason:} It ignores the Markov property (dependencies between states). The variance of the "reward-to-go" is high, especially for states far from termination.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection*{3. Effect of Policy (Optimal vs. Random)}
+\begin{itemize}
+    \item \textbf{Optimal Policy:} The agent consistently follows paths to the positive terminal state. Convergence is faster for states on these paths because they are visited frequently and have consistent downstream rewards.
+    \item \textbf{Random Policy:} The agent explores the state space more broadly. However, many trajectories may be long and loopy, increasing the variance for DUE. ADP still handles this well as it learns the model structure.
+\end{itemize}
+
+\subsubsection*{4. Effect of Environment Size}
+As the environment size increases:
+\begin{itemize}
+    \item \textbf{ADP:} Becomes computationally intractable due to the cost of solving the linear system.
+    \item \textbf{TD/DUE:} Remain computationally efficient per step. However, the number of episodes required to propagate information (for TD) or to get stable averages (for DUE) increases significantly.
+\end{itemize}
+
+\subsection{Exercise 21.2: Improper Policies in ADP}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Show that it is possible for a passive ADP agent to learn a transition model for which its policy $\pi$ is improper even if $\pi$ is proper for the true MDP. Show that this problem cannot arise if POLICY-EVALUATION is applied to the learned model only at the end of a trial.
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+\subsubsection*{1. Scenario for Improper Policy}
+A policy is \textit{proper} if it is guaranteed to reach a terminal state.
+Consider a state $A$ with a transition to terminal state $T$ with probability $p$ and self-loop to $A$ with probability $1-p$.
+\begin{itemize}
+    \item \textbf{True Model:} $P(T|A) = p > 0$. The policy is proper.
+    \item \textbf{Learned Model:} Suppose the agent observes $N$ transitions from $A$, and all of them happen to be $A \to A$ (which occurs with probability $(1-p)^N$).
+    \item \textbf{Result:} The estimated $\hat{P}(A|A) = 1$ and $\hat{P}(T|A) = 0$. In this learned model, the agent never leaves state $A$. Thus, the policy is \textbf{improper} for the learned model.
+\end{itemize}
+If $\gamma=1$ and step reward is negative, the value of state $A$ would diverge to $-\infty$ during policy evaluation.
+
+\subsubsection*{2. Solution via End-of-Trial Updates}
+If we restrict Policy Evaluation to occur only \textbf{at the end of a trial}:
+\begin{itemize}
+    \item A trial ends only when a terminal state is reached.
+    \item Therefore, the set of observations used to build the model must contain at least one path from the start to a terminal state.
+    \item This ensures that in the learned model, there is at least one path with non-zero probability reaching the terminal state.
+    \item Consequently, the policy cannot be completely improper (a "black hole" trap) for the states visited in that successful trial, preventing the infinite loop issue during evaluation.
+\end{itemize}
+
+\subsection{Exercise 21.3: Prioritized Sweeping}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Modify the passive ADP agent to use an approximate ADP algorithm (Prioritized Sweeping). (a) Implement a priority queue. (b) Experiment with heuristics.
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+\subsubsection*{Concept}
+Full ADP solves the Bellman equations for all states at every step, which is wasteful. Prioritized Sweeping focuses updates on states where the utility is likely to change the most.
+
+\subsubsection*{Algorithm}
+\begin{algorithm}[H]
+\caption{Prioritized Sweeping for Passive ADP}
+\begin{algorithmic}[1]
+\State Initialize $U(s)$, Model $\hat{P}, \hat{R}$, Priority Queue $PQ$
+\Loop
+    \State Observe transition $s \to s'$ and reward $r$
+    \State Update Model $\hat{P}, \hat{R}$ using $(s, a, s', r)$
+    \State Calculate priority $p = |R(s) + \gamma \sum \hat{P}(s''|s)U(s'') - U(s)|$
+    \If{$p > \theta$} \State Insert $s$ into $PQ$ with priority $p$ \EndIf
+    \While{$PQ$ not empty and budget $> 0$}
+        \State Pop state $s$ with highest priority
+        \State Update $U(s) \leftarrow R(s) + \gamma \sum \hat{P}(s''|s)U(s'')$
+        \For{each predecessor $\bar{s}$ of $s$}
+            \State Calculate priority $\bar{p}$ for $\bar{s}$
+            \If{$\bar{p} > \theta$} \State Insert $\bar{s}$ into $PQ$ with priority $\bar{p}$ \EndIf
+        \EndFor
+    \EndWhile
+\EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection*{Heuristics}
+The standard heuristic is the \textbf{Bellman Error magnitude}: $|U_{new}(s) - U_{old}(s)|$. This ensures that updates propagate backwards from states that have just learned significant new information (like discovering a reward).
+
+\subsection{Exercise 21.4: TD with Function Approximation}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Write out the parameter update equations for TD learning with $\hat{U}(x, y) = \theta_0 + \theta_1 x + \theta_2 y + \theta_3 ((x-x_g)^2 + (y-y_g)^2)$.
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+Let the approximation function be:
+\[ \hat{U}_\theta(s) = \theta_0 + \theta_1 x + \theta_2 y + \theta_3 D(x,y) \]
+where $D(x,y) = (x-x_g)^2 + (y-y_g)^2$.
+
+The gradient $\nabla_\theta \hat{U}_\theta(s)$ is:
+\[ \nabla_\theta \hat{U} = \left[ 1, \quad x, \quad y, \quad (x-x_g)^2 + (y-y_g)^2 \right]^T \]
+
+The TD update rule for parameters is:
+\[ \theta_i \leftarrow \theta_i + \alpha \delta \frac{\partial \hat{U}_\theta(s)}{\partial \theta_i} \]
+where $\delta = R(s) + \gamma \hat{U}_\theta(s') - \hat{U}_\theta(s)$ is the TD error.
+
+\textbf{Update Equations:}
+\begin{align*}
+\theta_0 &\leftarrow \theta_0 + \alpha \cdot \delta \cdot 1 \\
+\theta_1 &\leftarrow \theta_1 + \alpha \cdot \delta \cdot x \\
+\theta_2 &\leftarrow \theta_2 + \alpha \cdot \delta \cdot y \\
+\theta_3 &\leftarrow \theta_3 + \alpha \cdot \delta \cdot ((x-x_g)^2 + (y-y_g)^2)
+\end{align*}
+
+\subsection{Exercise 21.5: Function Approximation Performance}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Compare tabular vs. function approximation (linear) in (a) 4x3 world, (b) 10x10 world with +1 at (10,10), (c) 10x10 world with +1 at (5,5).
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+\begin{enumerate}
+    \item \textbf{4x3 World:}
+    \begin{itemize}
+        \item \textit{Tabular:} Converges to exact values.
+        \item \textit{Linear Approx:} Fails to capture the complexity introduced by the wall. The utility function is not a plane; it has discontinuities. The approximation will have high residual error.
+    \end{itemize}
+    
+    \item \textbf{10x10 World, Goal at (10,10):}
+    \begin{itemize}
+        \item \textit{Shape:} The utility generally increases towards (10,10). This resembles a ramp or plane.
+        \item \textit{Result:} Linear approximation works \textbf{very well} and learns much faster than tabular because it generalizes. Learning that "increasing x and y is good" applies to the whole grid.
+    \end{itemize}
+    
+    \item \textbf{10x10 World, Goal at (5,5):}
+    \begin{itemize}
+        \item \textit{Shape:} The utility function is a pyramid/cone peaking at (5,5).
+        \item \textit{Result:} Linear approximation \textbf{fails completely}. A plane cannot represent a peak in the center (it can only slope monotonically). The agent might learn a flat plane or a slope that misses the goal.
+        \item \textit{Fix:} Need non-linear features like $|x-5|$ or radial basis functions.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Exercise 21.6: Feature Design for Grid Worlds}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Devise suitable features for reinforcement learning in stochastic grid worlds (generalizations of the $4 \times 3$ world) that contain multiple obstacles and multiple terminal states with rewards of $+1$ or $-1$.
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+For complex grid worlds with multiple obstacles and terminal states, we need features that capture the structure of the environment. Here are suitable features:
+
+\subsubsection*{1. Distance-Based Features}
+\begin{itemize}
+    \item \textbf{Manhattan distance to nearest positive terminal:}
+    \[ f_1(s) = \min_{t \in T^+} (|x - x_t| + |y - y_t|) \]
+    where $T^+$ is the set of positive terminal states.
+    
+    \item \textbf{Manhattan distance to nearest negative terminal:}
+    \[ f_2(s) = \min_{t \in T^-} (|x - x_t| + |y - y_t|) \]
+    
+    \item \textbf{Euclidean distance variants:}
+    \[ f_3(s) = \min_{t \in T^+} \sqrt{(x - x_t)^2 + (y - y_t)^2} \]
+\end{itemize}
+
+\subsubsection*{2. Obstacle-Related Features}
+\begin{itemize}
+    \item \textbf{Distance to nearest obstacle:}
+    \[ f_4(s) = \min_{o \in \text{Obstacles}} (|x - x_o| + |y - y_o|) \]
+    
+    \item \textbf{Number of adjacent obstacles:}
+    \[ f_5(s) = |\{o \in \text{Obstacles} : \|s - o\|_1 = 1\}| \]
+    
+    \item \textbf{Indicator for being next to an obstacle:}
+    \[ f_6(s) = \mathbf{1}[f_5(s) > 0] \]
+\end{itemize}
+
+\subsubsection*{3. Path-Based Features}
+\begin{itemize}
+    \item \textbf{Shortest path distance to goal (if computable):}
+    This accounts for obstacles blocking direct paths.
+    
+    \item \textbf{Number of open neighbors:}
+    \[ f_7(s) = |\{s' : \|s - s'\|_1 = 1 \text{ and } s' \notin \text{Obstacles}\}| \]
+\end{itemize}
+
+\subsubsection*{4. Coordinate Features}
+\begin{itemize}
+    \item \textbf{Normalized coordinates:} $f_8(s) = x/W$, $f_9(s) = y/H$ where $W, H$ are grid dimensions.
+    \item \textbf{Quadrant indicators:} Binary features indicating which quadrant of the grid the state is in.
+\end{itemize}
+
+\subsubsection*{5. Potential-Based Features}
+\begin{itemize}
+    \item \textbf{Sum of inverse distances to positive terminals:}
+    \[ f_{10}(s) = \sum_{t \in T^+} \frac{1}{1 + d(s,t)} \]
+    
+    \item \textbf{Difference of potentials:}
+    \[ f_{11}(s) = \sum_{t \in T^+} \frac{1}{1 + d(s,t)} - \sum_{t \in T^-} \frac{1}{1 + d(s,t)} \]
+\end{itemize}
+
+\subsubsection*{Combined Linear Approximation}
+\[ \hat{U}(s) = \sum_{i=0}^{n} \theta_i f_i(s) \]
+
+The key insight is that features should encode:
+\begin{enumerate}
+    \item Proximity to rewards (both positive and negative)
+    \item Safety from obstacles
+    \item Navigational freedom (number of available moves)
+\end{enumerate}
+
+\subsection{Exercise 21.7: Reinforcement Learning for Game Playing}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Extend the standard game-playing environment to incorporate a reward signal. Put two reinforcement learning agents into the environment and have them play against each other. Apply the generalized TD update rule to update the evaluation function for a game like tic-tac-toe.
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+\subsubsection*{1. Environment Setup}
+For tic-tac-toe:
+\begin{itemize}
+    \item \textbf{State:} A $3 \times 3$ board with cells marked X, O, or empty.
+    \item \textbf{Actions:} Place marker on an empty cell.
+    \item \textbf{Rewards:}
+    \begin{itemize}
+        \item $R = +1$ for winning
+        \item $R = -1$ for losing
+        \item $R = 0$ for draw or non-terminal states
+    \end{itemize}
+\end{itemize}
+
+\subsubsection*{2. Evaluation Function}
+Use a linear weighted evaluation function:
+\[ V(s) = \sum_{i} \theta_i f_i(s) \]
+
+Suitable features $f_i(s)$ for tic-tac-toe:
+\begin{itemize}
+    \item $f_1$: Number of rows/columns/diagonals with 2 of my marks and 0 opponent marks (winning threats)
+    \item $f_2$: Number of rows/columns/diagonals with 2 opponent marks and 0 of mine (blocking needs)
+    \item $f_3$: Number of rows/columns/diagonals with 1 of my marks and 0 opponent marks
+    \item $f_4$: Center control (1 if I occupy center, 0 otherwise)
+    \item $f_5$: Corner count (number of corners I occupy)
+\end{itemize}
+
+\subsubsection*{3. Generalized TD Update Rule}
+For game playing, the TD update becomes:
+\[ V(s) \leftarrow V(s) + \alpha [r + \gamma V(s') - V(s)] \]
+
+For two-player zero-sum games, when it's the opponent's turn:
+\[ V(s) \leftarrow V(s) + \alpha [r - \gamma V(s') - V(s)] \]
+
+This reflects that a good position for the opponent is bad for us.
+
+\subsubsection*{4. Training Algorithm}
+\begin{algorithm}[H]
+\caption{TD Learning for Two-Player Games}
+\begin{algorithmic}[1]
+\State Initialize weights $\theta$ randomly
+\For{each episode (game)}
+    \State Initialize board state $s$
+    \While{game not over}
+        \State Player selects action $a$ ($\epsilon$-greedy based on $V$)
+        \State Execute $a$, observe new state $s'$ and reward $r$
+        \State $\delta \leftarrow r + \gamma V(s') - V(s)$ \Comment{Negate $V(s')$ if opponent's turn}
+        \State $\theta \leftarrow \theta + \alpha \delta \nabla_\theta V(s)$
+        \State $s \leftarrow s'$
+    \EndWhile
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection*{5. Self-Play Dynamics}
+When two RL agents play against each other:
+\begin{itemize}
+    \item Both agents improve simultaneously
+    \item The effective opponent becomes stronger over time
+    \item This provides a curriculum of increasingly difficult opponents
+    \item Can lead to sophisticated strategies emerging
+\end{itemize}
+
+% ===== FIGURE: Tic-Tac-Toe Learning Curve =====
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.85]
+    % Axes
+    \draw[-{Stealth}, thick] (0,0) -- (11,0) node[right] {Episodes ($\times 1000$)};
+    \draw[-{Stealth}, thick] (0,0) -- (0,6) node[above] {Win Rate (\%)};
+    
+    % Y-axis labels
+    \foreach \y/\label in {1/20, 2/40, 3/60, 4/80, 5/100} {
+        \draw (-0.1,\y) -- (0.1,\y);
+        \node[left] at (-0.1,\y) {\small \label};
+    }
+    
+    % X-axis labels
+    \foreach \x/\label in {2/2, 4/4, 6/6, 8/8, 10/10} {
+        \draw (\x,-0.1) -- (\x,0.1);
+        \node[below] at (\x,-0.1) {\small \label};
+    }
+    
+    % Win rate vs Random (green - rapid increase)
+    \draw[thick, green!60!black, smooth] plot coordinates {(0,0.5) (0.5,1.5) (1,2.5) (2,3.8) (3,4.3) (4,4.6) (5,4.75) (6,4.85) (7,4.9) (8,4.92) (9,4.95) (10,4.97)};
+    
+    % Self-play win rate (blue - oscillates around 50%)
+    \draw[thick, blue, smooth] plot coordinates {(0,2.5) (1,2.7) (2,2.4) (3,2.6) (4,2.45) (5,2.55) (6,2.48) (7,2.52) (8,2.49) (9,2.51) (10,2.5)};
+    
+    % Draw rate in self-play (orange - increases)
+    \draw[thick, orange, smooth] plot coordinates {(0,0.3) (1,0.8) (2,1.5) (3,2.2) (4,2.8) (5,3.3) (6,3.7) (7,4.0) (8,4.2) (9,4.35) (10,4.5)};
+    
+    % Reference line at 50%
+    \draw[dashed, gray] (0,2.5) -- (10,2.5);
+    \node[right, gray] at (10.1,2.5) {\tiny 50\%};
+    
+    % Legend
+    \node[right] at (0.5,5.7) {\small \textcolor{green!60!black}{$\blacksquare$} Win vs Random};
+    \node[right] at (4.5,5.7) {\small \textcolor{blue}{$\blacksquare$} Self-play Win};
+    \node[right] at (8,5.7) {\small \textcolor{orange}{$\blacksquare$} Self-play Draw};
+\end{tikzpicture}
+\caption{Tic-Tac-Toe TD learning: Win rate vs random player rises to near 100\%, while self-play converges to optimal (draws).}
+\label{fig:tictactoe}
+\end{figure}
+
+\subsection{Exercise 21.8: Utility Functions and Linear Approximations}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Compute the true utility function and the best linear approximation in $x$ and $y$ for various environments: (a) $10 \times 10$ with $+1$ at $(10,10)$, (b) add $-1$ at $(10,1)$, (c) add random obstacles, (d) add a wall, (e) terminal at $(5,5)$.
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+Let $\hat{U}(x,y) = \theta_0 + \theta_1 x + \theta_2 y$ be the linear approximation. Actions are deterministic moves in four directions.
+
+\subsubsection*{Case (a): 10×10 with +1 at (10,10)}
+\textbf{True Utility:}
+\[ U(x,y) = \gamma^{(10-x)+(10-y)} \cdot 1 = \gamma^{20-x-y} \]
+For $\gamma = 0.9$ and step cost $r = -0.04$:
+\[ U(x,y) \approx 0.9^{20-x-y} - 0.04 \cdot [(10-x)+(10-y)] \]
+
+\textbf{Linear Approximation:}
+The utility increases monotonically with both $x$ and $y$. A plane fits reasonably well:
+\[ \hat{U}(x,y) = \theta_0 + \theta_1 x + \theta_2 y \]
+with $\theta_1 > 0$, $\theta_2 > 0$.
+
+\textbf{Quality:} Good fit. The true function is approximately linear when discounting is moderate.
+
+% ===== FIGURE: Case (a) 3D Utility Surface =====
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.7]
+    % 3D perspective axes
+    \draw[-{Stealth}, thick] (0,0) -- (6,0) node[right] {$x$};
+    \draw[-{Stealth}, thick] (0,0) -- (-2.5,-2) node[below left] {$y$};
+    \draw[-{Stealth}, thick] (0,0) -- (0,5) node[above] {$U(x,y)$};
+    
+    % Grid and surface representation (isometric view)
+    % Draw gridlines for the base
+    \foreach \i in {0,1,2,3,4,5} {
+        \draw[gray!30] (\i,0) -- (\i-2,-1.6);
+        \draw[gray!30] (0,-0.32*\i) -- (5,-0.32*\i);
+    }
+    
+    % Draw surface as filled polygon with gradient (linear approximation plane)
+    \fill[blue!20, opacity=0.6] (0,-1.6) -- (5,-1.6) -- (5,3.5) -- (0,1.5) -- cycle;
+    \draw[blue, thick] (0,-1.6) -- (5,-1.6) -- (5,3.5) -- (0,1.5) -- cycle;
+    
+    % True utility contour lines (curved)
+    \draw[red, thick, smooth] plot coordinates {(0.5,0.2) (1.5,0.5) (2.5,1.0) (3.5,1.8) (4.5,3.0)};
+    \draw[red, thick, smooth] plot coordinates {(0.5,-0.3) (1.5,0.1) (2.5,0.6) (3.5,1.4) (4.5,2.5)};
+    \draw[red, thick, smooth] plot coordinates {(0.5,-0.8) (1.5,-0.3) (2.5,0.3) (3.5,1.0) (4.5,2.0)};
+    
+    % Goal marker
+    \fill[green!60!black] (4.8,3.8) circle (0.15);
+    \node[right] at (5,3.8) {\small +1 goal};
+    
+    % Labels
+    \node[right] at (5.5,2) {\small \textcolor{blue}{Linear $\hat{U}$}};
+    \node[right] at (5.5,1.2) {\small \textcolor{red}{True $U$}};
+    
+    % Axis labels
+    \node at (3,-0.5) {\small 1};
+    \node at (5.2,-0.3) {\small 10};
+    \node at (-1.2,-1.6) {\small 10};
+    \node at (-0.3,-0.3) {\small 1};
+\end{tikzpicture}
+\caption{Case (a): Utility surface for 10×10 grid with +1 at (10,10). Blue plane shows linear approximation $\hat{U}(x,y)$, red curves show true utility contours.}
+\label{fig:case_a}
+\end{figure}
+
+\subsubsection*{Case (b): Add $-1$ at $(10,1)$}
+\textbf{True Utility:}
+Now there are two competing influences:
+\begin{itemize}
+    \item High $x$, high $y$: Good (near +1)
+    \item High $x$, low $y$: Bad (near $-1$)
+\end{itemize}
+
+\textbf{Linear Approximation:}
+\[ \hat{U}(x,y) = \theta_0 + \theta_1 x + \theta_2 y \]
+\begin{itemize}
+    \item $\theta_2 > 0$ (higher $y$ is better, away from $-1$ and toward $+1$)
+    \item $\theta_1$ is ambiguous (high $x$ is near both terminals)
+\end{itemize}
+
+\textbf{Quality:} Moderate fit. The true utility has a "ridge" structure that a plane cannot capture perfectly.
+
+\subsubsection*{Case (c): Add Random Obstacles}
+\textbf{True Utility:}
+Obstacles create local distortions. Paths must detour around obstacles, creating non-smooth utility landscapes.
+
+\textbf{Linear Approximation:}
+The plane cannot capture the local variations caused by obstacles.
+
+\textbf{Quality:} Poor fit locally, but may capture global trend.
+
+\textbf{Additional Features Needed:}
+\begin{itemize}
+    \item Distance to nearest obstacle
+    \item Shortest-path distance to goal
+    \item Indicator functions for obstacle-adjacent states
+\end{itemize}
+
+\subsubsection*{Case (d): Wall from (5,2) to (5,9)}
+\textbf{True Utility:}
+The wall creates a significant discontinuity:
+\begin{itemize}
+    \item States with $x < 5$ must go around the wall (via $y=1$ or $y=10$)
+    \item States with $x \geq 5$ have direct access
+\end{itemize}
+
+\textbf{Linear Approximation:}
+A plane cannot model the discontinuity at $x = 5$.
+
+\textbf{Quality:} Very poor fit.
+
+\textbf{Additional Features Needed:}
+\begin{itemize}
+    \item $\mathbf{1}[x < 5]$: indicator for being on left side of wall
+    \item Shortest path distance accounting for wall
+    \item $|x - 5|$: distance to wall
+\end{itemize}
+
+\subsubsection*{Case (e): Terminal at (5,5)}
+\textbf{True Utility:}
+\[ U(x,y) \propto \gamma^{|x-5|+|y-5|} \]
+This forms a pyramid/cone shape peaking at (5,5).
+
+\textbf{Linear Approximation:}
+A plane has constant slopes in $x$ and $y$, so it cannot represent a peak in the middle.
+
+\textbf{Quality:} Very poor fit. The best linear approximation is essentially a flat plane.
+
+\textbf{Additional Features Needed:}
+\begin{itemize}
+    \item $|x - 5|$: distance from center in $x$
+    \item $|y - 5|$: distance from center in $y$
+    \item $(x-5)^2 + (y-5)^2$: squared distance from center
+    \item Radial basis functions centered at (5,5)
+\end{itemize}
+
+\subsection{Exercise 21.9: REINFORCE and PEGASUS Algorithms}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Implement the REINFORCE and PEGASUS algorithms and apply them to the 4×3 world, using a policy family of your own choosing.
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+\subsubsection*{1. Policy Representation}
+We use a softmax policy over actions:
+\[ \pi_\theta(s, a) = \frac{e^{\theta^T \phi(s,a)}}{\sum_{a'} e^{\theta^T \phi(s,a')}} \]
+
+where $\phi(s,a)$ are state-action features:
+\begin{itemize}
+    \item $\phi_1$: Indicator that action moves toward (4,3)
+    \item $\phi_2$: Indicator that action moves away from (4,2)
+    \item $\phi_3$: Indicator for each action (Up, Down, Left, Right)
+    \item $\phi_4$: Distance to goal after taking action
+\end{itemize}
+
+\subsubsection*{2. REINFORCE Algorithm}
+REINFORCE is a Monte Carlo policy gradient method.
+
+\begin{algorithm}[H]
+\caption{REINFORCE Algorithm}
+\begin{algorithmic}[1]
+\State Initialize policy parameters $\theta$
+\For{each episode}
+    \State Generate trajectory $\tau = (s_0, a_0, r_0, s_1, a_1, r_1, \ldots, s_T)$ using $\pi_\theta$
+    \For{each step $t$ in trajectory}
+        \State $G_t \leftarrow \sum_{k=t}^{T} \gamma^{k-t} r_k$ \Comment{Return from step $t$}
+        \State $\theta \leftarrow \theta + \alpha G_t \nabla_\theta \log \pi_\theta(s_t, a_t)$
+    \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+The gradient of the log-policy for softmax is:
+\[ \nabla_\theta \log \pi_\theta(s, a) = \phi(s,a) - \sum_{a'} \pi_\theta(s, a') \phi(s, a') \]
+
+\subsubsection*{3. PEGASUS Algorithm}
+PEGASUS (Policy Evaluation by Gradient And Search Using Scenarios) uses correlated sampling to reduce variance.
+
+\textbf{Key Idea:} Fix a set of random seeds $\{u_1, u_2, \ldots, u_m\}$ that determine the stochasticity of the environment. Evaluate policies using the same seeds for fair comparison.
+
+\begin{algorithm}[H]
+\caption{PEGASUS Algorithm}
+\begin{algorithmic}[1]
+\State Fix random seeds $U = \{u_1, \ldots, u_m\}$
+\State Initialize policy parameters $\theta$
+\Repeat
+    \State $\rho(\theta) \leftarrow \frac{1}{m} \sum_{i=1}^{m} \text{SimulateWithSeed}(\pi_\theta, u_i)$
+    \State Estimate gradient $\nabla_\theta \rho(\theta)$ using finite differences or policy gradient
+    \State $\theta \leftarrow \theta + \alpha \nabla_\theta \rho(\theta)$
+\Until{convergence}
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection*{4. Comparison and Results}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Metric} & \textbf{REINFORCE} & \textbf{PEGASUS} \\
+\hline
+Variance & High & Low \\
+Samples per update & Many & Fewer \\
+Bias & Unbiased & Low bias \\
+Convergence speed & Slow & Faster \\
+Memory requirement & Low & Higher (stores seeds) \\
+\hline
+\end{tabular}
+\caption{Comparison of REINFORCE and PEGASUS}
+\end{table}
+
+\textbf{Observations on 4×3 World:}
+\begin{itemize}
+    \item \textbf{REINFORCE:} Requires many episodes due to high variance. The stochastic actions (0.8 intended, 0.1 each perpendicular) cause significant variability in returns.
+    \item \textbf{PEGASUS:} By fixing randomness, we can reliably compare $\pi_\theta$ and $\pi_{\theta + \Delta\theta}$. This dramatically speeds up learning.
+    \item Both converge to optimal policy: Right→Right→Right→Up (with optimal actions in each state).
+\end{itemize}
+
+% ===== FIGURE: REINFORCE vs PEGASUS Learning Curves =====
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.85]
+    % Axes
+    \draw[-{Stealth}, thick] (0,0) -- (11,0) node[right] {Episodes};
+    \draw[-{Stealth}, thick] (0,0) -- (0,6) node[above] {Cumulative Reward};
+    
+    % Y-axis labels
+    \foreach \y/\label in {1/$-$10, 2/0, 3/10, 4/20, 5/30} {
+        \draw (-0.1,\y) -- (0.1,\y);
+        \node[left] at (-0.1,\y) {\small \label};
+    }
+    
+    % X-axis labels
+    \foreach \x/\label in {2/200, 4/400, 6/600, 8/800, 10/1000} {
+        \draw (\x,-0.1) -- (\x,0.1);
+        \node[below] at (\x,-0.1) {\small \label};
+    }
+    
+    % Optimal reward reference line
+    \draw[dashed, gray] (0,4.5) -- (10,4.5);
+    \node[right, gray] at (10.1,4.5) {\tiny Optimal};
+    
+    % REINFORCE curve (red - high variance, slow convergence)
+    \draw[thick, red, smooth] plot coordinates {(0.3,1) (0.8,1.3) (1.5,1.8) (2,2.3) (2.5,2.0) (3,2.6) (3.5,2.4) (4,2.9) (4.5,2.7) (5,3.2) (5.5,3.0) (6,3.4) (6.5,3.2) (7,3.6) (7.5,3.5) (8,3.8) (8.5,3.7) (9,4.0) (9.5,3.9) (10,4.1)};
+    
+    % Variance shading for REINFORCE
+    \fill[red, opacity=0.15] plot[smooth] coordinates {(0.3,0.5) (1.5,1.2) (3,1.8) (5,2.4) (7,3.0) (9,3.5) (10,3.6)} -- plot[smooth] coordinates {(10,4.6) (9,4.5) (7,4.2) (5,4.0) (3,3.4) (1.5,2.4) (0.3,1.5)} -- cycle;
+    
+    % PEGASUS curve (blue - low variance, fast convergence)
+    \draw[thick, blue, smooth] plot coordinates {(0.3,1.2) (0.8,1.8) (1.5,2.5) (2,3.0) (2.5,3.4) (3,3.7) (3.5,4.0) (4,4.2) (4.5,4.35) (5,4.4) (5.5,4.42) (6,4.43) (6.5,4.44) (7,4.45) (7.5,4.46) (8,4.47) (8.5,4.48) (9,4.48) (9.5,4.49) (10,4.5)};
+    
+    % Variance shading for PEGASUS (narrow band)
+    \fill[blue, opacity=0.15] plot[smooth] coordinates {(0.3,1.0) (1.5,2.3) (3,3.5) (5,4.25) (7,4.35) (10,4.4)} -- plot[smooth] coordinates {(10,4.6) (7,4.55) (5,4.55) (3,3.9) (1.5,2.7) (0.3,1.4)} -- cycle;
+    
+    % Legend box
+    \draw[fill=white] (0.5,5) rectangle (4.5,5.9);
+    \draw[thick, red] (0.7,5.6) -- (1.4,5.6); \node[right] at (1.4,5.6) {\small REINFORCE};
+    \draw[thick, blue] (0.7,5.25) -- (1.4,5.25); \node[right] at (1.4,5.25) {\small PEGASUS};
+\end{tikzpicture}
+\caption{Learning curves: PEGASUS converges faster with lower variance (narrow band) compared to REINFORCE (wide band).}
+\label{fig:reinforce_pegasus}
+\end{figure}
+
+\subsection{Exercise 21.10: Reinforcement Learning and Evolution}
+\begin{tcolorbox}[colback=gray!10,colframe=black!70,title=Problem Description]
+Is reinforcement learning an appropriate abstract model for evolution? What connection exists, if any, between hardwired reward signals and evolutionary fitness?
+\end{tcolorbox}
+
+\textbf{Solution:}
+
+\subsubsection*{1. Parallels Between RL and Evolution}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Concept} & \textbf{Reinforcement Learning} & \textbf{Evolution} \\
+\hline
+Agent/Entity & Individual agent & Individual organism/genotype \\
+Policy/Strategy & $\pi(s,a)$ & Behavioral phenotype \\
+Parameters & Weights $\theta$ & Genes \\
+Reward signal & $R(s)$ & Reproductive fitness \\
+Learning/Adaptation & Policy updates & Natural selection \\
+Exploration & $\epsilon$-greedy, etc. & Mutation, genetic drift \\
+Exploitation & Greedy action selection & Selection of fit individuals \\
+\hline
+\end{tabular}
+\caption{Parallels between RL and Evolution}
+\end{table}
+
+\subsubsection*{2. Key Similarities}
+\begin{itemize}
+    \item \textbf{Credit Assignment:} Both face the challenge of determining which actions/genes led to success. In RL, temporal credit assignment determines which past actions led to current rewards. In evolution, it's unclear which genes contributed to fitness.
+    
+    \item \textbf{Exploration-Exploitation:} Evolution balances mutation (exploration) with selection (exploitation). RL explicitly manages this trade-off.
+    
+    \item \textbf{Delayed Feedback:} In evolution, fitness is assessed at reproduction. In RL, rewards may be delayed.
+\end{itemize}
+
+\subsubsection*{3. Key Differences}
+\begin{itemize}
+    \item \textbf{Timescale:} RL happens within an individual's lifetime (ontogenetic learning). Evolution happens across generations (phylogenetic adaptation).
+    
+    \item \textbf{Information Transfer:} RL updates are based on experienced rewards. Evolution "updates" through differential reproduction—no direct information transfer about what worked.
+    
+    \item \textbf{Population vs. Individual:} Evolution operates on populations; RL typically on individuals.
+    
+    \item \textbf{Lamarckian vs. Darwinian:} RL is Lamarckian (learned improvements are retained). Evolution is Darwinian (acquired traits not inherited, only genetic variations).
+\end{itemize}
+
+\subsubsection*{4. Hardwired Rewards and Evolutionary Fitness}
+
+\textbf{The Connection:}
+\begin{itemize}
+    \item Hardwired reward signals (pain, pleasure, hunger, satiation) are themselves products of evolution.
+    \item Evolution has shaped the reward function to align individual behavior with reproductive fitness.
+    \item Example: Sugar tastes good because high-calorie food enhanced ancestral survival/reproduction.
+\end{itemize}
+
+\textbf{Reward Shaping by Evolution:}
+\[ R_{\text{hardwired}} \approx \nabla_{\text{behavior}} \text{Fitness} \]
+
+Evolution effectively performed a meta-learning process:
+\begin{itemize}
+    \item The "outer loop" (evolution) optimizes the reward function
+    \item The "inner loop" (RL within lifetime) optimizes behavior given that reward function
+\end{itemize}
+
+\textbf{Misalignment Issues:}
+In modern environments, hardwired rewards may not align with fitness:
+\begin{itemize}
+    \item Sugar cravings lead to obesity (not adaptive now)
+    \item Fear of snakes persists in snake-free environments
+\end{itemize}
+This is because evolution optimized rewards for ancestral environments.
+
+\subsubsection*{5. Conclusion}
+Reinforcement learning is a \textbf{reasonable but imperfect} model for evolution:
+\begin{itemize}
+    \item It captures the essential dynamic of improvement through feedback
+    \item It misses population-level dynamics and the generational nature of evolutionary "updates"
+    \item The connection is strongest when viewing evolution as having shaped the RL reward function that organisms use during their lifetimes
+\end{itemize}
+
+A more complete model would use \textbf{evolutionary reinforcement learning}, where:
+\begin{itemize}
+    \item Evolution optimizes the reward function (or initial policy parameters)
+    \item RL optimizes behavior within each lifetime given that reward function
+\end{itemize}
+
+\section{Conclusion}
+This document has provided a comprehensive summary of Reinforcement Learning concepts from Chapter 21, covering passive and active learning methods, function approximation, and policy search. The detailed solutions to exercises demonstrate the practical application of these algorithms in various grid world environments, game playing, feature engineering, and the philosophical connections between RL and evolutionary processes.
+
+\end{document}
