@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import random
+from tqdm import tqdm
 
 # ============= GRID WORLD ENVIRONMENT =============
 class GridWorld:
@@ -281,9 +282,7 @@ def run_experiment(env, env_name, num_episodes=500, num_runs=20):
     tabular_rms_errors = []
     linear_rms_errors = []
     
-    for run in range(num_runs):
-        if (run + 1) % 5 == 0:
-            print(f"  Run {run + 1}/{num_runs}")
+    for run in tqdm(range(num_runs), desc=f"Training {env_name}"):
         
         tabular = TabularQLearning(env, epsilon=0.1)
         linear = LinearFunctionApproximation(env, epsilon=0.1)
@@ -380,9 +379,9 @@ def plot_all_results(results_dict):
         ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('exercise_21_5_results.png', dpi=150, bbox_inches='tight')
+    plt.savefig('results/exercise_21_5_results.png', dpi=150, bbox_inches='tight')
     plt.show()
-    print("\nPlot saved to 'exercise_21_5_results.png'")
+    print("\nPlot saved to 'results/exercise_21_5_results.png'")
 
 
 def print_utility_comparison(env, tabular, linear, true_U):

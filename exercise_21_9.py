@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import random
+from tqdm import tqdm
 
 # ============= GRID WORLD ENVIRONMENT =============
 class GridWorld:
@@ -222,7 +223,7 @@ class REINFORCE:
     def train(self, num_episodes):
         """Train for num_episodes."""
         returns = []
-        for _ in range(num_episodes):
+        for _ in tqdm(range(num_episodes), desc="REINFORCE training", leave=False):
             trajectory = self.run_episode()
             G = sum(r for _, _, r in trajectory)
             returns.append(G)
@@ -323,13 +324,10 @@ class PEGASUS:
         """Train using gradient ascent."""
         returns = []
         
-        for iteration in range(num_iterations):
+        for iteration in tqdm(range(num_iterations), desc="PEGASUS training", leave=False):
             gradient, value = self.estimate_gradient()
             self.policy.theta += self.alpha * gradient
             returns.append(value)
-            
-            if (iteration + 1) % 50 == 0:
-                print(f"Iteration {iteration + 1}: Return = {value:.4f}")
         
         return returns
     
@@ -366,26 +364,21 @@ def run_comparison(num_runs=10, reinforce_episodes=1000, pegasus_iterations=200)
     final_reinforce_evals = []
     final_pegasus_evals = []
     
-    for run in range(num_runs):
-        print(f"\n--- Run {run + 1}/{num_runs} ---")
+    for run in tqdm(range(num_runs), desc="Overall progress"):
         
         # REINFORCE
-        print("Training REINFORCE...")
         reinforce = REINFORCE(env, alpha=0.01)
         reinforce_returns = reinforce.train(reinforce_episodes)
         reinforce_eval = reinforce.evaluate()
         all_reinforce_returns.append(reinforce_returns)
         final_reinforce_evals.append(reinforce_eval)
-        print(f"  Final evaluation: {reinforce_eval:.4f}")
         
         # PEGASUS
-        print("Training PEGASUS...")
         pegasus = PEGASUS(env, alpha=0.05, num_scenarios=30, max_steps=30)
         pegasus_returns = pegasus.train(pegasus_iterations)
         pegasus_eval = pegasus.evaluate()
         all_pegasus_returns.append(pegasus_returns)
         final_pegasus_evals.append(pegasus_eval)
-        print(f"  Final evaluation: {pegasus_eval:.4f}")
     
     return {
         'reinforce_returns': all_reinforce_returns,
@@ -462,9 +455,9 @@ def plot_results(results, reinforce_episodes=1000, pegasus_iterations=200):
                 f'{mean:.3f}±{std:.3f}', ha='center', va='bottom', fontsize=10)
     
     plt.tight_layout()
-    plt.savefig('exercise_21_9_results.png', dpi=150, bbox_inches='tight')
+    plt.savefig('results/exercise_21_9_results.png', dpi=150, bbox_inches='tight')
     plt.show()
-    print("\nPlot saved to 'exercise_21_9_results.png'")
+    print("\nPlot saved to 'results/exercise_21_9_results.png'")
 
 
 def print_learned_policy(policy, env):
@@ -513,7 +506,10 @@ if __name__ == "__main__":
     
     env = GridWorld()
     pegasus = PEGASUS(env, alpha=0.05, num_scenarios=50, max_steps=50)
-    pegasus.train(200)
+    print("Training final PEGASUS agent...")
+    for _ in tqdm(range(200), desc="Final training"):
+        gradient, value = pegasus.estimate_gradient()
+        pegasus.policy.theta += pegasus.alpha * gradient
     print_learned_policy(pegasus.policy, env)
     
     # Optimal policy for comparison

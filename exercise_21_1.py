@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import random
+from tqdm import tqdm
 
 # ============= GRID WORLD ENVIRONMENT =============
 class GridWorld:
@@ -312,9 +313,7 @@ def run_experiment(num_trials=60, num_runs=10):
     print("Running experiments...")
     print(f"Number of trials: {num_trials}, Number of runs: {num_runs}")
     
-    for run in range(num_runs):
-        if (run + 1) % 10 == 0:
-            print(f"  Run {run + 1}/{num_runs}")
+    for run in tqdm(range(num_runs), desc="Running experiments"):
         
         # Optimal policy experiments
         due_opt = DirectUtilityEstimation(env)
@@ -407,9 +406,9 @@ def plot_results(results, num_trials=60):
     ax.set_ylim(0, 1.5)
     
     plt.tight_layout()
-    plt.savefig('exercise_21_1_results.png', dpi=150, bbox_inches='tight')
+    plt.savefig('results/exercise_21_1_results.png', dpi=150, bbox_inches='tight')
     plt.show()
-    print("Plot saved to 'exercise_21_1_results.png'")
+    print("Plot saved to 'results/exercise_21_1_results.png'")
 
 
 def print_final_utilities(env, due, td, adp):
@@ -438,13 +437,12 @@ def run_single_detailed_experiment(num_trials=100):
     adp = AdaptiveDynamicProgramming(env)
     
     print("\nRunning single detailed experiment with optimal policy...")
-    for trial in range(num_trials):
+    for trial in tqdm(range(num_trials), desc="Training trials"):
         due.run_trial(optimal_policy)
         td.run_trial(optimal_policy)
         adp.run_trial(optimal_policy)
         
-        if (trial + 1) % 20 == 0:
-            print(f"Trial {trial + 1}: DUE={due.get_rms_error():.4f}, "
+    print(f"Final: DUE={due.get_rms_error():.4f}, "
                   f"TD={td.get_rms_error():.4f}, ADP={adp.get_rms_error():.4f}")
     
     print_final_utilities(env, due, td, adp)

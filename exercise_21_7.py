@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import random
 import copy
+from tqdm import tqdm
 
 # ============= TIC-TAC-TOE ENVIRONMENT =============
 class TicTacToe:
@@ -345,7 +346,7 @@ def train_self_play(num_episodes=10000):
     o_win_count = 0
     draw_count = 0
     
-    for episode in range(num_episodes):
+    for episode in tqdm(range(num_episodes), desc="Self-play training"):
         game = TicTacToe()
         winner = play_game(agent_x, agent_o, game, training=True)
         
@@ -375,11 +376,6 @@ def train_self_play(num_episodes=10000):
             x_win_count = 0
             o_win_count = 0
             draw_count = 0
-            
-            if (episode + 1) % 2000 == 0:
-                print(f"Episode {episode + 1}: X wins {x_wins[-1]:.1f}%, "
-                      f"O wins {o_wins[-1]:.1f}%, Draws {draws[-1]:.1f}%, "
-                      f"vs Random {win_vs_random[-1]}%")
     
     return agent_x, agent_o, x_wins, o_wins, draws, win_vs_random
 
@@ -414,9 +410,9 @@ def plot_results(x_wins, o_wins, draws, win_vs_random):
     ax.set_ylim(0, 100)
     
     plt.tight_layout()
-    plt.savefig('exercise_21_7_results.png', dpi=150, bbox_inches='tight')
+    plt.savefig('results/exercise_21_7_results.png', dpi=150, bbox_inches='tight')
     plt.show()
-    print("\nPlot saved to 'exercise_21_7_results.png'")
+    print("\nPlot saved to 'results/exercise_21_7_results.png'")
 
 
 def demo_games(agent):
@@ -475,7 +471,7 @@ if __name__ == "__main__":
     x_count = 0
     o_count = 0
     draw_count = 0
-    for _ in range(1000):
+    for _ in tqdm(range(1000), desc="Self-play evaluation"):
         game = TicTacToe()
         winner = play_game(agent_x, agent_o, game, training=False)
         if winner == 'X':
