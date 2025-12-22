@@ -251,7 +251,7 @@ class REINFORCE:
 
 # ============= PEGASUS ALGORITHM =============
 class PEGASUS:
-    def __init__(self, env, alpha=0.01, gamma=1.0, num_scenarios=50, max_steps=50):
+    def __init__(self, env, alpha=0.1, gamma=1.0, num_scenarios=50, max_steps=50):
         self.env = env
         self.alpha = alpha
         self.gamma = gamma
@@ -259,11 +259,15 @@ class PEGASUS:
         self.max_steps = max_steps
         self.policy = SoftmaxPolicy(env)
         
+        # Initialize policy parameters with small random values for better exploration
+        self.policy.theta = np.random.randn(self.policy.num_features, len(env.actions)) * 0.1
+        
         # Generate fixed random seeds for each scenario
+        # Each scenario needs seeds for both action sampling AND environment transitions
         self.scenario_seeds = []
         for _ in range(num_scenarios):
             self.scenario_seeds.append(
-                [np.random.randint(0, 100000) for _ in range(max_steps)]
+                [np.random.randint(0, 100000) for _ in range(max_steps * 2)]  # Double for action+env
             )
     
     def run_scenario(self, scenario_idx, policy=None):
@@ -280,8 +284,14 @@ class PEGASUS:
             if self.env.is_terminal(state):
                 break
             
-            action = policy.get_best_action(state)  # Use deterministic action selection
-            next_state, reward = self.env.move_with_seed_sequence(state, action, seeds)
+            # CRITICAL FIX: Use stochastic sampling with fixed seed for reproducibility
+            # This is the KEY to PEGASUS - we need to sample actions but deterministically
+            action_seed = next(seeds)
+            np.random.seed(action_seed)
+            action = policy.sample_action(state)  # Stochastic action selection!
+            
+            env_seed = next(seeds)
+            next_state, reward = self.env.move(state, action, random_seed=env_seed)
             total_return += discount * reward
             discount *= self.gamma
             state = next_state
@@ -325,9 +335,19 @@ class PEGASUS:
         returns = []
         
         for iteration in tqdm(range(num_iterations), desc="PEGASUS training", leave=False):
-            gradient, value = self.estimate_gradient()
+            gradient, value = self.estimate_gradient(delta=0.1)  # Larger delta for better gradients
+            
+            # Gradient clipping for stability
+            grad_norm = np.linalg.norm(gradient)
+            if grad_norm > 1.0:
+                gradient = gradient / grad_norm
+            
             self.policy.theta += self.alpha * gradient
             returns.append(value)
+            
+            # Decay learning rate
+            if iteration > 0 and iteration % 50 == 0:
+                self.alpha *= 0.95
         
         return returns
     
@@ -373,8 +393,8 @@ def run_comparison(num_runs=10, reinforce_episodes=1000, pegasus_iterations=200)
         all_reinforce_returns.append(reinforce_returns)
         final_reinforce_evals.append(reinforce_eval)
         
-        # PEGASUS
-        pegasus = PEGASUS(env, alpha=0.05, num_scenarios=30, max_steps=30)
+        # PEGASUS (reduced scenarios for faster demo: 50→20)
+        pegasus = PEGASUS(env, alpha=0.2, num_scenarios=20, max_steps=50)
         pegasus_returns = pegasus.train(pegasus_iterations)
         pegasus_eval = pegasus.evaluate()
         all_pegasus_returns.append(pegasus_returns)
@@ -482,8 +502,9 @@ def print_learned_policy(policy, env):
 
 
 if __name__ == "__main__":
-    # Run experiments
-    results = run_comparison(num_runs=5, reinforce_episodes=500, pegasus_iterations=100)
+    # Run experiments (optimized for faster execution)
+    # Reduced: num_runs 5→3, pegasus_iterations 100→50 for faster demo
+    results = run_comparison(num_runs=3, reinforce_episodes=500, pegasus_iterations=50)
     
     # Print summary
     print("\n" + "="*70)
@@ -499,18 +520,22 @@ if __name__ == "__main__":
     print("- PEGASUS converges faster in terms of iterations")
     print("- Both converge to near-optimal policy for the 4x3 world")
     
-    # Train one final agent to show policy
-    print("\n" + "="*70)
-    print("FINAL TRAINED POLICY (PEGASUS)")
-    print("="*70)
     
-    env = GridWorld()
-    pegasus = PEGASUS(env, alpha=0.05, num_scenarios=50, max_steps=50)
-    print("Training final PEGASUS agent...")
-    for _ in tqdm(range(200), desc="Final training"):
-        gradient, value = pegasus.estimate_gradient()
-        pegasus.policy.theta += pegasus.alpha * gradient
-    print_learned_policy(pegasus.policy, env)
+    # COMMENTED OUT: Final training is very slow (~52s/iteration)
+    # The main comparison results are sufficient
+    # print("\n" + "="*70)
+    # print("FINAL TRAINED POLICY (PEGASUS)")
+    # print("="*70)
+    # 
+    # env = GridWorld()
+    # pegasus = PEGASUS(env, alpha=0.2, num_scenarios=50, max_steps=50)
+    # print("Training final PEGASUS agent...")
+    # for _ in tqdm(range(200), desc="Final training"):
+    #     gradient, value = pegasus.estimate_gradient(delta=0.1)
+    #     pegasus.policy.theta += pegasus.alpha * gradient
+    # print_learned_policy(pegasus.policy, env)
+    
+    print("\nSkipping final training (too slow). Main comparison complete!")
     
     # Optimal policy for comparison
     print("Optimal Policy (for reference):")
@@ -534,5 +559,5 @@ if __name__ == "__main__":
         print(row)
     
     # Plot results
-    plot_results(results, reinforce_episodes=500, pegasus_iterations=100)
+    plot_results(results, reinforce_episodes=500, pegasus_iterations=50)
 

@@ -11,12 +11,20 @@ from tqdm import tqdm
 
 # ============= GRID WORLD ENVIRONMENT =============
 class GridWorld:
-    def __init__(self, width=4, height=3):
+    def __init__(self, width=4, height=3, has_obstacle=True):
         self.width = width
         self.height = height
         self.start = (1, 1)
-        self.terminal_states = {(4, 3): 1.0, (4, 2): -1.0}  # (x, y): reward
-        self.obstacle = (2, 2)
+        # Scale terminal states with environment size
+        self.terminal_states = {(width, height): 1.0, (width, height-1): -1.0}
+        # Obstacle position: (2,2) for 4x3, middle for others
+        if has_obstacle:
+            if width == 4 and height == 3:
+                self.obstacle = (2, 2)  # Original 4x3 position
+            else:
+                self.obstacle = (width//2, height//2)  # Middle for others
+        else:
+            self.obstacle = None
         self.step_reward = -0.04
         self.actions = ['UP', 'DOWN', 'LEFT', 'RIGHT']
         self.action_effects = {
@@ -32,7 +40,8 @@ class GridWorld:
         states = []
         for x in range(1, self.width + 1):
             for y in range(1, self.height + 1):
-                if (x, y) != self.obstacle and (x, y) not in self.terminal_states:
+                if ((self.obstacle is None or (x, y) != self.obstacle) and 
+                    (x, y) not in self.terminal_states):
                     states.append((x, y))
         return states
     
@@ -41,7 +50,7 @@ class GridWorld:
         states = []
         for x in range(1, self.width + 1):
             for y in range(1, self.height + 1):
-                if (x, y) != self.obstacle:
+                if self.obstacle is None or (x, y) != self.obstacle:
                     states.append((x, y))
         return states
     
@@ -78,7 +87,7 @@ class GridWorld:
         # Check boundaries and obstacles
         if (new_x < 1 or new_x > self.width or 
             new_y < 1 or new_y > self.height or 
-            (new_x, new_y) == self.obstacle):
+            (self.obstacle is not None and (new_x, new_y) == self.obstacle)):
             new_x, new_y = state  # Stay in place
         
         next_state = (new_x, new_y)
@@ -98,7 +107,7 @@ class GridWorld:
             
             if (new_x < 1 or new_x > self.width or 
                 new_y < 1 or new_y > self.height or 
-                (new_x, new_y) == self.obstacle):
+                (self.obstacle is not None and (new_x, new_y) == self.obstacle)):
                 new_x, new_y = state
             
             probs[(new_x, new_y)] += prob
@@ -298,6 +307,78 @@ class AdaptiveDynamicProgramming:
         return np.sqrt(np.mean(errors)) if errors else 1.0
 
 
+# ============= ENVIRONMENT SIZE EXPERIMENT =============
+def run_size_comparison(sizes=[(4,3), (6,5), (8,6)], num_trials=40, num_runs=5):
+    """Compare algorithms across different environment sizes."""
+    size_results = {}
+    
+    for width, height in sizes:
+        print(f"\nTesting environment size: {width}x{height}")
+        env = GridWorld(width=width, height=height, has_obstacle=True)
+        optimal_policy = get_random_policy(env)  # Use random since optimal varies
+        
+        size_results[f"{width}x{height}"] = {
+            'DUE': [], 'TD': [], 'ADP': []
+        }
+        
+        for run in tqdm(range(num_runs), desc=f"Size {width}x{height}"):
+            due = DirectUtilityEstimation(env)
+            td = TDLearning(env, alpha=0.1)
+            adp = AdaptiveDynamicProgramming(env)
+            
+            due_errors, td_errors, adp_errors = [], [], []
+            
+            for trial in range(num_trials):
+                due.run_trial(optimal_policy)
+                td.run_trial(optimal_policy)
+                adp.run_trial(optimal_policy)
+                
+                due_errors.append(due.get_rms_error())
+                td_errors.append(td.get_rms_error())
+                adp_errors.append(adp.get_rms_error())
+            
+            size_results[f"{width}x{height}"]['DUE'].append(due_errors)
+            size_results[f"{width}x{height}"]['TD'].append(td_errors)
+            size_results[f"{width}x{height}"]['ADP'].append(adp_errors)
+    
+    return size_results
+
+
+def run_obstacle_comparison(num_trials=60, num_runs=5):
+    """Compare with and without obstacles."""
+    obstacle_results = {}
+    
+    for has_obstacle in [True, False]:
+        label = "With Obstacles" if has_obstacle else "Without Obstacles"
+        print(f"\nTesting: {label}")
+        env = GridWorld(width=4, height=3, has_obstacle=has_obstacle)
+        optimal_policy = get_optimal_policy() if has_obstacle else get_random_policy(env)
+        
+        obstacle_results[label] = {'DUE': [], 'TD': [], 'ADP': []}
+        
+        for run in tqdm(range(num_runs), desc=label):
+            due = DirectUtilityEstimation(env)
+            td = TDLearning(env, alpha=0.1)
+            adp = AdaptiveDynamicProgramming(env)
+            
+            due_errors, td_errors, adp_errors = [], [], []
+            
+            for trial in range(num_trials):
+                due.run_trial(optimal_policy)
+                td.run_trial(optimal_policy)
+                adp.run_trial(optimal_policy)
+                
+                due_errors.append(due.get_rms_error())
+                td_errors.append(td.get_rms_error())
+                adp_errors.append(adp.get_rms_error())
+            
+            obstacle_results[label]['DUE'].append(due_errors)
+            obstacle_results[label]['TD'].append(td_errors)
+            obstacle_results[label]['ADP'].append(adp_errors)
+    
+    return obstacle_results
+
+
 # ============= MAIN EXPERIMENT =============
 def run_experiment(num_trials=60, num_runs=10):
     """Run comparison experiment."""
@@ -310,10 +391,16 @@ def run_experiment(num_trials=60, num_runs=10):
         'DUE_random': [], 'TD_random': [], 'ADP_random': []
     }
     
-    print("Running experiments...")
-    print(f"Number of trials: {num_trials}, Number of runs: {num_runs}")
+    print("\n" + "="*70)
+    print("RUNNING COMPARISON EXPERIMENTS")
+    print("="*70)
+    print(f"Environment: {env.width}x{env.height} grid world")
+    print(f"Number of trials per run: {num_trials}")
+    print(f"Number of runs: {num_runs}")
+    print(f"Total experiments: {num_runs * 2} (optimal + random policies)")
     
-    for run in tqdm(range(num_runs), desc="Running experiments"):
+    for run in tqdm(range(num_runs), desc="Overall progress"):
+        print(f"\n[Run {run+1}/{num_runs}] Starting optimal policy experiments...")
         
         # Optimal policy experiments
         due_opt = DirectUtilityEstimation(env)
@@ -332,12 +419,17 @@ def run_experiment(num_trials=60, num_runs=10):
             due_errors_opt.append(due_opt.get_rms_error())
             td_errors_opt.append(td_opt.get_rms_error())
             adp_errors_opt.append(adp_opt.get_rms_error())
+            
+            if (trial + 1) % 20 == 0:
+                print(f"  Trial {trial+1}/{num_trials}: DUE={due_errors_opt[-1]:.4f}, "
+                      f"TD={td_errors_opt[-1]:.4f}, ADP={adp_errors_opt[-1]:.4f}")
         
         results['DUE_optimal'].append(due_errors_opt)
         results['TD_optimal'].append(td_errors_opt)
         results['ADP_optimal'].append(adp_errors_opt)
         
         # Random policy experiments
+        print(f"[Run {run+1}/{num_runs}] Starting random policy experiments...")
         random_policy = get_random_policy(env)
         
         due_rand = DirectUtilityEstimation(env)
@@ -356,6 +448,10 @@ def run_experiment(num_trials=60, num_runs=10):
             due_errors_rand.append(due_rand.get_rms_error())
             td_errors_rand.append(td_rand.get_rms_error())
             adp_errors_rand.append(adp_rand.get_rms_error())
+            
+            if (trial + 1) % 20 == 0:
+                print(f"  Trial {trial+1}/{num_trials}: DUE={due_errors_rand[-1]:.4f}, "
+                      f"TD={td_errors_rand[-1]:.4f}, ADP={adp_errors_rand[-1]:.4f}")
         
         results['DUE_random'].append(due_errors_rand)
         results['TD_random'].append(td_errors_rand)

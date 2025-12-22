@@ -826,16 +826,19 @@ Let $\hat{U}(x,y) = \theta_0 + \theta_1 x + \theta_2 y$ be the linear approximat
 
 \subsubsection*{Case (a): 10×10 with +1 at (10,10)}
 \textbf{True Utility:}
-\[ U(x,y) = \gamma^{(10-x)+(10-y)} \cdot 1 = \gamma^{20-x-y} \]
-For $\gamma = 0.9$ and step cost $r = -0.04$:
-\[ U(x,y) \approx 0.9^{20-x-y} - 0.04 \cdot [(10-x)+(10-y)] \]
+The optimal policy moves toward (10,10) with Manhattan distance $(10-x) + (10-y)$. With step cost:
+\[ U(x,y) = 1 - \gamma[(10-x)+(10-y)] = 1 - \gamma(20 - x - y) \]
+
+Expanding:
+\[ U(x,y) = (1 - 20\gamma) + \gamma x + \gamma y \]
+
 
 \textbf{Linear Approximation:}
-The utility increases monotonically with both $x$ and $y$. A plane fits reasonably well:
+The true utility function IS linear in $x$ and $y$:
 \[ \hat{U}(x,y) = \theta_0 + \theta_1 x + \theta_2 y \]
-with $\theta_1 > 0$, $\theta_2 > 0$.
+where $\theta_0 = 1 - 20\gamma$, $\theta_1 = \gamma$, $\theta_2 = \gamma$.
 
-\textbf{Quality:} Good fit. The true function is approximately linear when discounting is moderate.
+\textbf{Quality:} Perfect fit. The linear approximation exactly matches the true utility.
 
 % ===== FIGURE: Case (a) 3D Utility Surface =====
 \begin{figure}[H]
@@ -964,24 +967,29 @@ We use a softmax policy over actions:
 
 where $\phi(s,a)$ are state-action features:
 \begin{itemize}
-    \item $\phi_1$: Indicator that action moves toward (4,3)
-    \item $\phi_2$: Indicator that action moves away from (4,2)
-    \item $\phi_3$: Indicator for each action (Up, Down, Left, Right)
-    \item $\phi_4$: Distance to goal after taking action
+    \item $\phi_1$: Bias term (always 1)
+    \item $\phi_2$: Indicator that action moves toward (4,3) in x-direction
+    \item $\phi_3$: Indicator that action moves toward (4,3) in y-direction
+    \item $\phi_4$: Normalized negative distance to goal (4,3)
+    \item $\phi_5$: Normalized distance from bad state (4,2)
+    \item $\phi_6, \phi_7, \phi_8$: Action preference indicators
 \end{itemize}
 
 \subsubsection*{2. REINFORCE Algorithm}
-REINFORCE is a Monte Carlo policy gradient method.
+REINFORCE is a Monte Carlo policy gradient method that directly updates policy parameters based on observed returns.
 
 \begin{algorithm}[H]
-\caption{REINFORCE Algorithm}
+\caption{REINFORCE Algorithm with Baseline}
 \begin{algorithmic}[1]
 \State Initialize policy parameters $\theta$
+\State Initialize baseline $b(s)$ for each state
 \For{each episode}
     \State Generate trajectory $\tau = (s_0, a_0, r_0, s_1, a_1, r_1, \ldots, s_T)$ using $\pi_\theta$
     \For{each step $t$ in trajectory}
         \State $G_t \leftarrow \sum_{k=t}^{T} \gamma^{k-t} r_k$ \Comment{Return from step $t$}
-        \State $\theta \leftarrow \theta + \alpha G_t \nabla_\theta \log \pi_\theta(s_t, a_t)$
+        \State Update baseline: $b(s_t) \leftarrow b(s_t) + \frac{1}{N(s_t)}(G_t - b(s_t))$
+        \State $\delta \leftarrow G_t - b(s_t)$ \Comment{Advantage}
+        \State $\theta \leftarrow \theta + \alpha \delta \nabla_\theta \log \pi_\theta(s_t, a_t)$
     \EndFor
 \EndFor
 \end{algorithmic}
@@ -991,22 +999,26 @@ The gradient of the log-policy for softmax is:
 \[ \nabla_\theta \log \pi_\theta(s, a) = \phi(s,a) - \sum_{a'} \pi_\theta(s, a') \phi(s, a') \]
 
 \subsubsection*{3. PEGASUS Algorithm}
-PEGASUS (Policy Evaluation by Gradient And Search Using Scenarios) uses correlated sampling to reduce variance.
+PEGASUS (Policy Evaluation by Gradient And Search Using Scenarios) uses \textbf{correlated sampling} to reduce variance.
 
-\textbf{Key Idea:} Fix a set of random seeds $\{u_1, u_2, \ldots, u_m\}$ that determine the stochasticity of the environment. Evaluate policies using the same seeds for fair comparison.
+\textbf{Key Idea:} Fix a set of random seeds $\{u_1, u_2, \ldots, u_m\}$ that determine \textit{both} the stochastic action selection \textit{and} the stochastic environment transitions. When comparing different policies, use the same seeds so the only difference in outcomes is due to the policy change, not random variation.
 
 \begin{algorithm}[H]
 \caption{PEGASUS Algorithm}
 \begin{algorithmic}[1]
-\State Fix random seeds $U = \{u_1, \ldots, u_m\}$
-\State Initialize policy parameters $\theta$
+\State Fix random seeds $U = \{(u_1^a, u_1^e), \ldots, (u_m^a, u_m^e)\}$ for actions and environment
+\State Initialize policy parameters $\theta$ with small random values
 \Repeat
-    \State $\rho(\theta) \leftarrow \frac{1}{m} \sum_{i=1}^{m} \text{SimulateWithSeed}(\pi_\theta, u_i)$
-    \State Estimate gradient $\nabla_\theta \rho(\theta)$ using finite differences or policy gradient
+    \State $\rho(\theta) \leftarrow \frac{1}{m} \sum_{i=1}^{m} \text{SimulateWithSeeds}(\pi_\theta, u_i^a, u_i^e)$
+    \State Estimate gradient $\nabla_\theta \rho(\theta)$ using finite differences:
+    \State \quad For each parameter $\theta_j$:
+    \State \quad \quad $\frac{\partial \rho}{\partial \theta_j} \approx \frac{\rho(\theta + \epsilon e_j) - \rho(\theta - \epsilon e_j)}{2\epsilon}$
     \State $\theta \leftarrow \theta + \alpha \nabla_\theta \rho(\theta)$
 \Until{convergence}
 \end{algorithmic}
 \end{algorithm}
+
+\textbf{CRITICAL Implementation Note:} The key to PEGASUS working correctly is that we must use \textbf{stochastic action sampling} (not greedy/deterministic) during gradient estimation, but with fixed random seeds for reproducibility. This allows the finite difference method to detect how policy parameter changes affect expected return.
 
 \subsubsection*{4. Comparison and Results}
 
@@ -1016,11 +1028,12 @@ PEGASUS (Policy Evaluation by Gradient And Search Using Scenarios) uses correlat
 \hline
 \textbf{Metric} & \textbf{REINFORCE} & \textbf{PEGASUS} \\
 \hline
-Variance & High & Low \\
-Samples per update & Many & Fewer \\
-Bias & Unbiased & Low bias \\
+Variance & High & Low (due to correlated samples) \\
+Samples per update & Many episodes & Fewer scenarios \\
+Bias & Unbiased & Small bias (finite diff.) \\
 Convergence speed & Slow & Faster \\
 Memory requirement & Low & Higher (stores seeds) \\
+Gradient estimation & Direct (analytical) & Indirect (finite difference) \\
 \hline
 \end{tabular}
 \caption{Comparison of REINFORCE and PEGASUS}
@@ -1028,9 +1041,10 @@ Memory requirement & Low & Higher (stores seeds) \\
 
 \textbf{Observations on 4×3 World:}
 \begin{itemize}
-    \item \textbf{REINFORCE:} Requires many episodes due to high variance. The stochastic actions (0.8 intended, 0.1 each perpendicular) cause significant variability in returns.
-    \item \textbf{PEGASUS:} By fixing randomness, we can reliably compare $\pi_\theta$ and $\pi_{\theta + \Delta\theta}$. This dramatically speeds up learning.
-    \item Both converge to optimal policy: Right→Right→Right→Up (with optimal actions in each state).
+    \item \textbf{REINFORCE:} Requires many episodes due to high variance. The stochastic nature of the environment (0.8 intended, 0.1 each perpendicular direction) causes significant variability in returns, making gradient estimates noisy.
+    \item \textbf{PEGASUS:} By fixing randomness across policy comparisons, we can reliably detect small improvements in the policy. This dramatically reduces variance and speeds up learning.
+    \item \textbf{Common Ground:} Both converge to optimal or near-optimal policies for simple environments like the 4×3 world.
+    \item \textbf{Implementation Issue:} If PEGASUS uses deterministic action selection (greedy), it fails to learn because the finite difference gradient becomes zero. The policy must sample actions stochastically.
 \end{itemize}
 
 % ===== FIGURE: REINFORCE vs PEGASUS Learning Curves =====
