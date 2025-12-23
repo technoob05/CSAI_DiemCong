@@ -308,7 +308,7 @@ class PEGASUS:
             total += self.run_scenario(i, policy)
         return total / self.num_scenarios
     
-    def estimate_gradient(self, delta=0.01):
+    def estimate_gradient(self, delta=0.05):
         """Estimate gradient using finite differences."""
         gradient = np.zeros_like(self.policy.theta)
         base_value = self.evaluate_policy()
@@ -335,7 +335,7 @@ class PEGASUS:
         returns = []
         
         for iteration in tqdm(range(num_iterations), desc="PEGASUS training", leave=False):
-            gradient, value = self.estimate_gradient(delta=0.1)  # Larger delta for better gradients
+            gradient, value = self.estimate_gradient(delta=0.05)
             
             # Gradient clipping for stability
             grad_norm = np.linalg.norm(gradient)
@@ -345,9 +345,9 @@ class PEGASUS:
             self.policy.theta += self.alpha * gradient
             returns.append(value)
             
-            # Decay learning rate
-            if iteration > 0 and iteration % 50 == 0:
-                self.alpha *= 0.95
+            # Decay learning rate more gradually
+            if iteration > 0 and iteration % 100 == 0:
+                self.alpha *= 0.9
         
         return returns
     
@@ -393,8 +393,8 @@ def run_comparison(num_runs=10, reinforce_episodes=1000, pegasus_iterations=200)
         all_reinforce_returns.append(reinforce_returns)
         final_reinforce_evals.append(reinforce_eval)
         
-        # PEGASUS (reduced scenarios for faster demo: 50→20)
-        pegasus = PEGASUS(env, alpha=0.2, num_scenarios=20, max_steps=50)
+        # PEGASUS
+        pegasus = PEGASUS(env, alpha=0.15, num_scenarios=50, max_steps=50)
         pegasus_returns = pegasus.train(pegasus_iterations)
         pegasus_eval = pegasus.evaluate()
         all_pegasus_returns.append(pegasus_returns)
@@ -502,9 +502,8 @@ def print_learned_policy(policy, env):
 
 
 if __name__ == "__main__":
-    # Run experiments (optimized for faster execution)
-    # Reduced: num_runs 5→3, pegasus_iterations 100→50 for faster demo
-    results = run_comparison(num_runs=3, reinforce_episodes=500, pegasus_iterations=50)
+    # Run experiments
+    results = run_comparison(num_runs=5, reinforce_episodes=1000, pegasus_iterations=100)
     
     # Print summary
     print("\n" + "="*70)
@@ -559,5 +558,5 @@ if __name__ == "__main__":
         print(row)
     
     # Plot results
-    plot_results(results, reinforce_episodes=500, pegasus_iterations=50)
+    plot_results(results, reinforce_episodes=1000, pegasus_iterations=100)
 

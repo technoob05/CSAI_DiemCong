@@ -75,17 +75,65 @@ class TicTacToe:
         new_game.board = self.board.copy()
         new_game.current_player = self.current_player
         return new_game
+    
+    @staticmethod
+    def rotate_board(board):
+        """Rotate board 90 degrees clockwise."""
+        return [board[6], board[3], board[0],
+                board[7], board[4], board[1],
+                board[8], board[5], board[2]]
+    
+    @staticmethod
+    def reflect_board(board):
+        """Reflect board horizontally."""
+        return [board[2], board[1], board[0],
+                board[5], board[4], board[3],
+                board[8], board[7], board[6]]
+    
+    @staticmethod
+    def get_canonical_state(state):
+        """Get canonical form of state using symmetries (8 total: 4 rotations x 2 reflections)."""
+        board, player = state
+        board_list = list(board)
+        
+        # Generate all 8 symmetric versions
+        configurations = [board_list]
+        
+        # 4 rotations
+        current = board_list
+        for _ in range(3):
+            current = TicTacToe.rotate_board(current)
+            configurations.append(current)
+        
+        # 4 reflections of rotations
+        reflected = TicTacToe.reflect_board(board_list)
+        configurations.append(reflected)
+        current = reflected
+        for _ in range(3):
+            current = TicTacToe.rotate_board(current)
+            configurations.append(current)
+        
+        # Return lexicographically smallest (canonical)
+        canonical_board = min([tuple(c) for c in configurations])
+        return (canonical_board, player)
 
 
 # ============= TD LEARNING AGENT =============
 class TDAgent:
-    def __init__(self, player, alpha=0.1, gamma=1.0, epsilon=0.1):
+    def __init__(self, player, alpha=0.1, gamma=1.0, epsilon=0.1, use_symmetry=True):
         self.player = player  # 'X' or 'O'
         self.alpha = alpha
         self.gamma = gamma
         self.epsilon = epsilon
+        self.use_symmetry = use_symmetry
         self.V = defaultdict(lambda: 0.0)  # State value function
         self.episode_states = []  # States visited in current episode
+    
+    def get_canonical(self, state):
+        """Get canonical state if using symmetry."""
+        if self.use_symmetry:
+            return TicTacToe.get_canonical_state(state)
+        return state
     
     def get_features(self, state):
         """Extract features from board state."""
@@ -145,7 +193,8 @@ class TDAgent:
         elif ' ' not in board:
             return 0.0
         
-        return self.V[state]
+        canonical_state = self.get_canonical(state)
+        return self.V[canonical_state]
     
     def choose_action(self, game, training=True):
         """Choose action using epsilon-greedy policy."""
@@ -170,8 +219,12 @@ class TDAgent:
                 else:
                     value = 0.0
             else:
-                # For the opponent's perspective, negate the value
-                value = -self.get_state_value(next_state)
+                # After our move, it's opponent's turn
+                # Opponent will try to minimize our value
+                # So we negate the value of the resulting state
+                canonical_next = self.get_canonical(next_state)
+                next_value = self.V[canonical_next]
+                value = -next_value
             
             if value > best_value:
                 best_value = value
@@ -181,14 +234,18 @@ class TDAgent:
     
     def update(self, state, next_state, reward, done):
         """TD(0) update."""
+        canonical_state = self.get_canonical(state)
+        
         if done:
             target = reward
         else:
-            # From my perspective, opponent's good state is my bad state
-            target = reward + self.gamma * (-self.get_state_value(next_state))
+            # After our move, it's opponent's turn
+            # The value from opponent's perspective is negated from ours
+            canonical_next = self.get_canonical(next_state)
+            target = self.gamma * (-self.V[canonical_next])
         
-        current_value = self.V[state]
-        self.V[state] += self.alpha * (target - current_value)
+        current_value = self.V[canonical_state]
+        self.V[canonical_state] += self.alpha * (target - current_value)
 
 
 # ============= RANDOM AGENT =============
@@ -279,21 +336,6 @@ def play_game(agent1, agent2, game, training=True):
             else:
                 agent.update(old_state, next_state, 0.0, done)
     
-    # Update for the other agent on game end
-    if training:
-        for player in ['X', 'O']:
-            agent = agents[player]
-            if isinstance(agent, TDAgent) and states_by_player[player]:
-                last_state = states_by_player[player][-1]
-                if winner == agent.player:
-                    final_reward = 1.0
-                elif winner is not None:
-                    final_reward = -1.0
-                else:
-                    final_reward = 0.0
-                # Final state update
-                agent.V[last_state] = agent.V[last_state] + agent.alpha * (final_reward - agent.V[last_state])
-    
     return winner
 
 
@@ -328,12 +370,12 @@ def evaluate_agent(agent, opponent, num_games=100):
     return wins, losses, draws
 
 
-def train_self_play(num_episodes=10000):
+def train_self_play(num_episodes=20000):
     """Train two TD agents through self-play."""
     print("Training through self-play...")
     
-    agent_x = TDAgent('X', alpha=0.1, epsilon=0.3)
-    agent_o = TDAgent('O', alpha=0.1, epsilon=0.3)
+    agent_x = TDAgent('X', alpha=0.2, epsilon=0.2)
+    agent_o = TDAgent('O', alpha=0.2, epsilon=0.2)
     
     # Tracking metrics
     x_wins = []
@@ -348,7 +390,13 @@ def train_self_play(num_episodes=10000):
     
     for episode in tqdm(range(num_episodes), desc="Self-play training"):
         game = TicTacToe()
-        winner = play_game(agent_x, agent_o, game, training=True)
+        
+        # Alternate who plays X and O to balance learning
+        if episode % 2 == 0:
+            winner = play_game(agent_x, agent_o, game, training=True)
+        else:
+            # Swap: agent_o plays as X, agent_x plays as O
+            winner = play_game(agent_o, agent_x, game, training=True)
         
         if winner == 'X':
             x_win_count += 1
@@ -358,9 +406,9 @@ def train_self_play(num_episodes=10000):
             draw_count += 1
         
         # Decay epsilon
-        if episode % 1000 == 0 and episode > 0:
-            agent_x.epsilon = max(0.05, agent_x.epsilon * 0.9)
-            agent_o.epsilon = max(0.05, agent_o.epsilon * 0.9)
+        if episode % 500 == 0 and episode > 0:
+            agent_x.epsilon = max(0.01, agent_x.epsilon * 0.95)
+            agent_o.epsilon = max(0.01, agent_o.epsilon * 0.95)
         
         # Record stats every window episodes
         if (episode + 1) % window == 0:
@@ -449,7 +497,7 @@ if __name__ == "__main__":
     print("="*70)
     
     # Train agents
-    agent_x, agent_o, x_wins, o_wins, draws, win_vs_random = train_self_play(num_episodes=10000)
+    agent_x, agent_o, x_wins, o_wins, draws, win_vs_random = train_self_play(num_episodes=20000)
     
     # Final evaluation
     print("\n" + "="*70)
@@ -484,8 +532,10 @@ if __name__ == "__main__":
     
     # Print number of learned states
     print(f"\nLearned States:")
-    print(f"  Agent X: {len(agent_x.V)} states")
-    print(f"  Agent O: {len(agent_o.V)} states")
+    print(f"  Agent X: {len(agent_x.V)} states (with symmetry reduction)")
+    print(f"  Agent O: {len(agent_o.V)} states (with symmetry reduction)")
+    print(f"  Note: Without symmetry, there would be ~5,478 reachable states")
+    print(f"  Symmetry reduction: ~{(1 - len(agent_x.V)/5478)*100:.1f}% state space reduction")
     
     # Plot results
     plot_results(x_wins, o_wins, draws, win_vs_random)

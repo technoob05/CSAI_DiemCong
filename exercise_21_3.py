@@ -95,12 +95,17 @@ class PassiveADP:
         self.N_sa = defaultdict(int)  # Count of (s, a) visits
         self.N_sas = defaultdict(int)  # Count of (s, a, s') transitions
         self.R = {}  # Observed rewards
+        # Initialize terminal state utilities
+        for terminal_state, reward in env.terminal_states.items():
+            self.U[terminal_state] = reward
         
     def update_model(self, s, a, s_prime, r):
         """Update transition model and rewards."""
         self.N_sa[(s, a)] += 1
         self.N_sas[(s, a, s_prime)] += 1
-        self.R[s_prime] = r
+        # Store reward for the state we're leaving from
+        if s not in self.env.terminal_states:
+            self.R[s] = self.env.step_reward
     
     def get_transition_prob(self, s, a, s_prime):
         """Estimate P(s'|s,a)."""
@@ -171,6 +176,10 @@ class PrioritizedSweepingADP:
         self.theta = theta  # Priority threshold
         self.max_updates = max_updates_per_step
         
+        # Initialize terminal state utilities
+        for terminal_state, reward in env.terminal_states.items():
+            self.U[terminal_state] = reward
+        
         # Priority queue: stores (-priority, state)
         # Using negative priority so heapq gives us max-heap behavior
         self.pq = []
@@ -183,7 +192,9 @@ class PrioritizedSweepingADP:
         """Update transition model and rewards."""
         self.N_sa[(s, a)] += 1
         self.N_sas[(s, a, s_prime)] += 1
-        self.R[s_prime] = r
+        # Store reward for the state we're leaving from
+        if s not in self.env.terminal_states:
+            self.R[s] = self.env.step_reward
         
         # Track predecessor
         if not self.env.is_terminal(s_prime):
@@ -293,7 +304,7 @@ def compute_rms_error(U_learned, U_true):
     return np.sqrt(np.mean(errors))
 
 
-def run_comparison(num_runs=10, num_trials=50):
+def run_comparison(num_runs=10, num_trials=150):
     """Compare standard ADP vs Prioritized Sweeping."""
     print("="*70)
     print("EXERCISE 21.3: PRIORITIZED SWEEPING COMPARISON")
@@ -322,7 +333,7 @@ def run_comparison(num_runs=10, num_trials=50):
         adp_errors_all.append(adp_errors)
         
         # Prioritized Sweeping
-        ps = PrioritizedSweepingADP(env, theta=0.01, max_updates_per_step=5)
+        ps = PrioritizedSweepingADP(env, theta=0.001, max_updates_per_step=15)
         ps_errors = []
         for trial in range(num_trials):
             ps.run_trial()
@@ -370,8 +381,8 @@ def plot_results(results):
     
     # Run one final agent to show learned utilities
     env = GridWorld()
-    ps = PrioritizedSweepingADP(env, theta=0.01, max_updates_per_step=5)
-    for _ in range(50):
+    ps = PrioritizedSweepingADP(env, theta=0.001, max_updates_per_step=15)
+    for _ in range(100):
         ps.run_trial()
     
     # Create grid visualization
@@ -412,7 +423,7 @@ def plot_results(results):
 
 if __name__ == "__main__":
     # Run comparison
-    results = run_comparison(num_runs=5, num_trials=50)
+    results = run_comparison(num_runs=5, num_trials=100)
     
     # Print summary
     print("\n" + "="*70)
