@@ -9,6 +9,11 @@ from collections import defaultdict
 import random
 from tqdm import tqdm
 
+# Reproducibility
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+
 # ============= GRID WORLD ENVIRONMENT =============
 class GridWorld:
     def __init__(self, width=4, height=3, has_obstacle=True):
@@ -151,25 +156,32 @@ class DirectUtilityEstimation:
         self.returns = defaultdict(list)  # state -> list of observed returns
         self.U = defaultdict(float)  # utility estimates
         
-    def run_trial(self, policy):
+    def run_trial(self, policy, max_steps=100):
         """Run one trial and update utility estimates."""
         state = self.env.start
-        trajectory = [(state, self.env.get_reward(state))]
+        trajectory = []
+        steps = 0
         
-        while not self.env.is_terminal(state):
+        while not self.env.is_terminal(state) and steps < max_steps:
+            if state not in policy:
+                break  # Invalid state for policy
             action = policy[state]
             next_state, reward = self.env.move(state, action)
-            trajectory.append((next_state, reward))
+            trajectory.append((state, next_state, reward))
             state = next_state
+            steps += 1
         
-        # Calculate returns for each state in trajectory
+        # Calculate returns for each state in trajectory (backward)
         G = 0
+        visited_states = set()
         for i in range(len(trajectory) - 1, -1, -1):
-            state, reward = trajectory[i]
+            state, next_state, reward = trajectory[i]
             G = reward + self.gamma * G
-            if state not in self.env.terminal_states:
+            # Only update first visit in this episode
+            if state not in visited_states and state not in self.env.terminal_states:
                 self.returns[state].append(G)
                 self.U[state] = np.mean(self.returns[state])
+                visited_states.add(state)
         
         return trajectory
     
@@ -184,7 +196,7 @@ class DirectUtilityEstimation:
 
 # ============= TEMPORAL DIFFERENCE LEARNING =============
 class TDLearning:
-    def __init__(self, env, gamma=1.0, alpha=0.1):
+    def __init__(self, env, gamma=1.0, alpha=0.2):  # Increased alpha from 0.1 to 0.2
         self.env = env
         self.gamma = gamma
         self.alpha = alpha
@@ -194,28 +206,35 @@ class TDLearning:
             self.U[term_state] = reward
         self.visit_count = defaultdict(int)
         
-    def run_trial(self, policy):
+    def run_trial(self, policy, max_steps=100):
         """Run one trial with TD updates."""
         state = self.env.start
         trajectory = []
+        steps = 0
         
-        while not self.env.is_terminal(state):
+        while not self.env.is_terminal(state) and steps < max_steps:
+            if state not in policy:
+                break  # Invalid state for policy
             action = policy[state]
             next_state, reward = self.env.move(state, action)
             trajectory.append((state, action, reward, next_state))
             
-            # TD update
+            # TD update: U(s) = U(s) + alpha * [R(s') + gamma * U(s') - U(s)]
             self.visit_count[state] += 1
-            # Decaying learning rate
-            alpha = self.alpha * (60 / (59 + self.visit_count[state]))
+            # Adaptive learning rate: faster decay initially, then slower
+            alpha = self.alpha / (1 + self.visit_count[state] / 30.0)
             
+            # Target calculation
             if self.env.is_terminal(next_state):
+                # Terminal state value is its reward
                 target = reward
             else:
                 target = reward + self.gamma * self.U[next_state]
             
+            # TD update
             self.U[state] += alpha * (target - self.U[state])
             state = next_state
+            steps += 1
         
         return trajectory
     
@@ -229,9 +248,10 @@ class TDLearning:
 
 # ============= ADAPTIVE DYNAMIC PROGRAMMING =============
 class AdaptiveDynamicProgramming:
-    def __init__(self, env, gamma=1.0):
+    def __init__(self, env, gamma=1.0, smoothing=0.05):
         self.env = env
         self.gamma = gamma
+        self.smoothing = smoothing  # Dirichlet smoothing to stabilize random policy
         self.U = defaultdict(float)
         # Initialize terminal state utilities
         for term_state, reward in env.terminal_states.items():
@@ -242,12 +262,15 @@ class AdaptiveDynamicProgramming:
         self.reward_sum = defaultdict(float)
         self.reward_count = defaultdict(int)
         
-    def run_trial(self, policy):
+    def run_trial(self, policy, max_steps=100):
         """Run one trial, update model, and solve Bellman equations."""
         state = self.env.start
         trajectory = []
+        steps = 0
         
-        while not self.env.is_terminal(state):
+        while not self.env.is_terminal(state) and steps < max_steps:
+            if state not in policy:
+                break  # Invalid state for policy
             action = policy[state]
             next_state, reward = self.env.move(state, action)
             trajectory.append((state, action, reward, next_state))
@@ -259,6 +282,7 @@ class AdaptiveDynamicProgramming:
             self.reward_count[state] += 1
             
             state = next_state
+            steps += 1
         
         # Solve Bellman equations with learned model
         self._policy_evaluation(policy)
@@ -269,18 +293,38 @@ class AdaptiveDynamicProgramming:
         """Get learned transition probabilities."""
         if self.state_action_counts[(state, action)] == 0:
             return {}
-        probs = {}
-        total = self.state_action_counts[(state, action)]
-        for next_state, count in self.transition_counts[(state, action)].items():
-            probs[next_state] = count / total
-        return probs
+        counts = dict(self.transition_counts[(state, action)])
+        # Add smoothing to observed next states
+        for ns in list(counts.keys()):
+            counts[ns] += self.smoothing
+        # Always allow staying in place (helps random policies)
+        counts[state] = counts.get(state, 0) + self.smoothing
+        total = sum(counts.values())
+        return {ns: cnt / total for ns, cnt in counts.items()}
     
-    def _policy_evaluation(self, policy, iterations=50):
-        """Iterative policy evaluation."""
+    def _policy_evaluation(self, policy, max_iterations=50):
+        """Iterative policy evaluation with convergence check."""
         states = self.env.get_states()
         
-        for _ in range(iterations):
-            new_U = defaultdict(float, self.U)
+        # Adaptive iterations based on data collected
+        total_visits = sum(self.state_action_counts.values())
+        if total_visits < 10:
+            iterations = 3  # Very few iterations if we have little data
+        elif total_visits < 30:
+            iterations = 10
+        elif total_visits < 100:
+            iterations = 30
+        else:
+            iterations = max_iterations
+        
+        for iteration in range(iterations):
+            delta = 0
+            new_U = {}
+            
+            # Copy current utilities
+            for s in self.env.get_all_states():
+                new_U[s] = self.U[s]
+            
             for state in states:
                 if state not in policy:
                     continue
@@ -289,13 +333,30 @@ class AdaptiveDynamicProgramming:
                 if not probs:
                     continue
                 
+                old_value = self.U[state]
                 reward = self.env.step_reward
-                expected_utility = sum(p * new_U[s_next] for s_next, p in probs.items())
-                new_U[state] = reward + self.gamma * expected_utility
+                # Use old U values (Bellman backup)
+                expected_utility = sum(p * self.U[s_next] for s_next, p in probs.items())
+                # Shrink toward zero when data is scarce to stabilize random policy
+                shrink_weight = min(1.0, total_visits / 50.0)
+                expected_utility = shrink_weight * expected_utility
+                new_value = reward + self.gamma * expected_utility
+                
+                # Clip extreme values to prevent instability
+                new_value = np.clip(new_value, -5, 5)
+                new_U[state] = new_value
+                delta = max(delta, abs(new_value - old_value))
             
-            self.U = new_U
+            # Update utilities
+            for state in new_U:
+                self.U[state] = new_U[state]
+            
+            # Early stopping if converged (adaptive threshold)
+            threshold = 0.02 if total_visits < 50 else 0.005
+            if delta < threshold:
+                break
         
-        # Set terminal state utilities
+        # Ensure terminal state utilities are correct
         for term_state, reward in self.env.terminal_states.items():
             self.U[term_state] = reward
     
@@ -323,7 +384,7 @@ def run_size_comparison(sizes=[(4,3), (6,5), (8,6)], num_trials=40, num_runs=5):
         
         for run in tqdm(range(num_runs), desc=f"Size {width}x{height}"):
             due = DirectUtilityEstimation(env)
-            td = TDLearning(env, alpha=0.1)
+            td = TDLearning(env, alpha=0.2)
             adp = AdaptiveDynamicProgramming(env)
             
             due_errors, td_errors, adp_errors = [], [], []
@@ -358,7 +419,7 @@ def run_obstacle_comparison(num_trials=60, num_runs=5):
         
         for run in tqdm(range(num_runs), desc=label):
             due = DirectUtilityEstimation(env)
-            td = TDLearning(env, alpha=0.1)
+            td = TDLearning(env, alpha=0.2)
             adp = AdaptiveDynamicProgramming(env)
             
             due_errors, td_errors, adp_errors = [], [], []
@@ -404,7 +465,7 @@ def run_experiment(num_trials=60, num_runs=10):
         
         # Optimal policy experiments
         due_opt = DirectUtilityEstimation(env)
-        td_opt = TDLearning(env, alpha=0.1)
+        td_opt = TDLearning(env, alpha=0.2)
         adp_opt = AdaptiveDynamicProgramming(env)
         
         due_errors_opt = []
@@ -433,7 +494,7 @@ def run_experiment(num_trials=60, num_runs=10):
         random_policy = get_random_policy(env)
         
         due_rand = DirectUtilityEstimation(env)
-        td_rand = TDLearning(env, alpha=0.1)
+        td_rand = TDLearning(env, alpha=0.2)
         adp_rand = AdaptiveDynamicProgramming(env)
         
         due_errors_rand = []
@@ -461,27 +522,38 @@ def run_experiment(num_trials=60, num_runs=10):
 
 
 def plot_results(results, num_trials=60):
-    """Plot comparison results."""
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    """Plot comparison results with confidence intervals."""
+    fig, axes = plt.subplots(1, 2, figsize=(15, 5))
     
     # Optimal policy plot
     ax = axes[0]
     trials = np.arange(1, num_trials + 1)
     
+    # Calculate mean and std for confidence intervals
     due_mean = np.mean(results['DUE_optimal'], axis=0)
     td_mean = np.mean(results['TD_optimal'], axis=0)
     adp_mean = np.mean(results['ADP_optimal'], axis=0)
     
-    ax.plot(trials, due_mean, 'r-', label='DUE', linewidth=2)
-    ax.plot(trials, td_mean, 'b-', label='TD', linewidth=2)
-    ax.plot(trials, adp_mean, 'g-', label='ADP', linewidth=2)
+    due_std = np.std(results['DUE_optimal'], axis=0)
+    td_std = np.std(results['TD_optimal'], axis=0)
+    adp_std = np.std(results['ADP_optimal'], axis=0)
     
-    ax.set_xlabel('Number of Trials', fontsize=12)
-    ax.set_ylabel('RMS Error', fontsize=12)
-    ax.set_title('Optimal Policy', fontsize=14)
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.set_ylim(0, 1.0)
+    # Plot with confidence intervals
+    ax.plot(trials, due_mean, 'r-', label='DUE', linewidth=2.5, alpha=0.9)
+    ax.fill_between(trials, due_mean - due_std, due_mean + due_std, color='r', alpha=0.15)
+    
+    ax.plot(trials, td_mean, 'b-', label='TD', linewidth=2.5, alpha=0.9)
+    ax.fill_between(trials, td_mean - td_std, td_mean + td_std, color='b', alpha=0.15)
+    
+    ax.plot(trials, adp_mean, 'g-', label='ADP', linewidth=2.5, alpha=0.9)
+    ax.fill_between(trials, adp_mean - adp_std, adp_mean + adp_std, color='g', alpha=0.15)
+    
+    ax.set_xlabel('Number of Trials', fontsize=13, fontweight='bold')
+    ax.set_ylabel('RMS Error', fontsize=13, fontweight='bold')
+    ax.set_title('Optimal Policy', fontsize=15, fontweight='bold')
+    ax.legend(fontsize=11, framealpha=0.95)
+    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.set_ylim(0, 0.8)
     
     # Random policy plot
     ax = axes[1]
@@ -490,21 +562,31 @@ def plot_results(results, num_trials=60):
     td_mean = np.mean(results['TD_random'], axis=0)
     adp_mean = np.mean(results['ADP_random'], axis=0)
     
-    ax.plot(trials, due_mean, 'r-', label='DUE', linewidth=2)
-    ax.plot(trials, td_mean, 'b-', label='TD', linewidth=2)
-    ax.plot(trials, adp_mean, 'g-', label='ADP', linewidth=2)
+    due_std = np.std(results['DUE_random'], axis=0)
+    td_std = np.std(results['TD_random'], axis=0)
+    adp_std = np.std(results['ADP_random'], axis=0)
     
-    ax.set_xlabel('Number of Trials', fontsize=12)
-    ax.set_ylabel('RMS Error', fontsize=12)
-    ax.set_title('Random Policy', fontsize=14)
-    ax.legend()
-    ax.grid(True, alpha=0.3)
-    ax.set_ylim(0, 1.5)
+    # Plot with confidence intervals
+    ax.plot(trials, due_mean, 'r-', label='DUE', linewidth=2.5, alpha=0.9)
+    ax.fill_between(trials, due_mean - due_std, due_mean + due_std, color='r', alpha=0.15)
     
-    plt.tight_layout()
-    plt.savefig('results/exercise_21_1_results.png', dpi=150, bbox_inches='tight')
-    plt.show()
-    print("Plot saved to 'results/exercise_21_1_results.png'")
+    ax.plot(trials, td_mean, 'b-', label='TD', linewidth=2.5, alpha=0.9)
+    ax.fill_between(trials, td_mean - td_std, td_mean + td_std, color='b', alpha=0.15)
+    
+    ax.plot(trials, adp_mean, 'g-', label='ADP', linewidth=2.5, alpha=0.9)
+    ax.fill_between(trials, adp_mean - adp_std, adp_mean + adp_std, color='g', alpha=0.15)
+    
+    ax.set_xlabel('Number of Trials', fontsize=13, fontweight='bold')
+    ax.set_ylabel('RMS Error', fontsize=13, fontweight='bold')
+    ax.set_title('Random Policy', fontsize=15, fontweight='bold')
+    ax.legend(fontsize=11, framealpha=0.95)
+    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.set_ylim(0, 2.0)
+    
+    plt.tight_layout(pad=1.5)
+    plt.savefig('results/exercise_21_1_results.png', dpi=300, bbox_inches='tight', facecolor='white')
+    plt.close()  # Close figure instead of showing
+    print("✓ High-quality plot saved to 'results/exercise_21_1_results.png'")
 
 
 def print_final_utilities(env, due, td, adp):
@@ -529,7 +611,7 @@ def run_single_detailed_experiment(num_trials=100):
     optimal_policy = get_optimal_policy()
     
     due = DirectUtilityEstimation(env)
-    td = TDLearning(env, alpha=0.1)
+    td = TDLearning(env, alpha=0.2)
     adp = AdaptiveDynamicProgramming(env)
     
     print("\nRunning single detailed experiment with optimal policy...")
